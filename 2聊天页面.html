@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ollama Chat</title>
+    <!-- CSS -->
+    <style>
+        body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #313131;
+}
+
+
+
+.think-container {
+    margin: 10px 0;
+    border: 1px solid #444;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.think-toggle {
+    background-color: #2a2a2a;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.think-icon {
+    margin-right: 8px;
+}
+
+.think-content{
+    padding: 10px;
+    background-color: #262626;
+}
+
+ .think-content2{
+    padding: 10px;
+    background-color: #262626;
+}
+
+.think-content2 pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.think-content pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+
+
+.container {
+    display: flex;
+    flex-direction: column; 
+    height: 100vh;
+    align-items: center;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+.chat-container {
+    flex: 1;
+    height: 0;
+    border-radius: 10px;
+    /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); */
+    padding-bottom: 20px;
+    box-sizing: border-box;
+    /* background: linear-gradient(135deg,#141e3009,#243b5509); */
+    overflow-y: scroll;
+}
+.chat-container::-webkit-scrollbar {
+    display: none;
+}
+.chat {
+    margin-bottom: 15px;
+}
+.chat.user {
+    text-align: right;
+}
+.chat.assistant {
+    text-align: left;
+}
+.chat .role {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: white;
+}
+.chat .message {
+    display: inline-block;
+    padding: 0 10px;
+    border-radius: 10px;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+.chat.user .message {
+    text-align: left;
+    color: white;
+    background: #ffffff12;
+}
+.chat.assistant .message {
+    background: #ffffff12;
+    color: white;
+}
+#messages {
+    flex: 2;
+    overflow-y: scroll;
+    padding: 1rem;
+    border-right: 1px solid #ccc;
+    max-width: 100%;
+    overflow-x: scroll;
+}
+
+#message-form {
+    padding: 1rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+#message-input{
+    flex: 1;
+    margin-right: 1em;
+}
+textarea{
+    resize: none;
+    border: none;
+    outline: none;
+    border-radius: .5em;
+    padding: .5em;
+    background-color: #ffffff12;
+    color: white;
+}
+#submit{
+    border: none;
+    color: white;
+    background-color: #ffffff12;
+    border-radius: .5em .5em 0 0;
+    flex: 1;
+}
+#submit:hover{
+    background-color: #e0e0e0;
+}
+#submit:active{
+    background-color: #757575;
+}
+#clean{
+    width: 5em;
+    height: 100%;
+    border: none;
+    background-color: #ffffff12;
+    color: white;
+    border-radius: .5em;
+    margin-left: 1em;
+}
+#clean:hover{
+    background-color: #e0e0e0;
+}
+#clean:active{
+    background-color: #757575;
+}
+#models{
+    border: none;
+    outline: none;
+    background-color: #ffffff12;
+    color: white;
+    border-radius: 0 0 .5em .5em;
+    text-align: center;
+    flex: 1;
+}
+option{
+    color: black;
+}
+/** 大屏 */
+@media (max-width: 993px) {
+    .chat-container{
+        width: 90%;
+    }
+    #message-form{
+        width: 90%;
+    }
+}
+/** 大屏 */
+@media (min-width: 993px) {
+    .chat-container{
+        width: 50%;
+    }
+    #message-form{
+        width: 50%;
+    }
+}
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 消息区域 -->
+        <div class="chat-container" id="chat-container">
+            <!-- Chat history will be dynamically inserted here -->
+        </div>
+        <div id="message-form">
+            <textarea type="text" id="message-input" rows="3" placeholder="聊天内容..."></textarea>
+            <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+                <button id="submit">发送</button>
+                <div style="height: 1px;"></div>
+                <select id="models"></select>
+            </div>
+            <button id="clean">清空</button>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="./utils/marked.min.js"></script>
+    <script>
+        const basePoint = "http://127.0.0.1:11434"
+        let chatModel = "";//模型名称
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatContainer = document.getElementById('chat-container');
+            const submitButton = document.getElementById('submit');
+            const messageInput = document.getElementById('message-input');
+            const modelSelect = document.getElementById("models");
+            const cleanButton = document.getElementById('clean');
+
+            const chatHistory = [];//聊天历史
+            let replyIng = false;//ai回复中
+
+            let controller = null;
+
+            loadModelTags();
+
+            //获取本地模型
+            function loadModelTags(){
+                fetch(`${basePoint}/api/tags`).then(res=>{
+                    return res.json()
+                }).then(res=>{
+                    initModels(res.models)
+                }).catch(e=>{
+                    console.error(e)
+                })
+            }
+
+            function initModels(models){
+                if(models.length<=0){
+                    return
+                }
+                chatModel = models[0].model
+                for(let model of models){
+                    modelSelect.options.add(new Option(model.name, model.model))
+                }
+            }
+
+            modelSelect.addEventListener('change', event=>{
+                chatModel = event.target.value
+            })
+
+            messageInput.addEventListener('keypress', event=>{
+                if(event.keyCode===13&&messageInput.value.length>0){
+                    sendMessage()
+                }
+            })
+
+            submitButton.addEventListener('click', (event) => {
+                sendMessage()
+            });
+
+            //发送消息
+           //发送消息
+function sendMessage(){
+    if(replyIng){
+        controller.abort();
+        submitButton.textContent="发送";
+        return;
+    }
+    if(messageInput.value.length<=0){
+        return;
+    }
+    controller = new AbortController();
+    replyIng = true;
+    event.preventDefault();
+    submitButton.textContent="停止"
+    renderChatHistory(true, {role: "user", content: messageInput.value})
+    requestMessage();
+    messageInput.value = '';
+}
+
+//请求对话数据
+async function requestMessage() {
+    // 添加默认的system消息
+    const messagesWithSystem = [
+        { role: "system", content: "You are a AI" },
+        ...chatHistory.map(msg => 
+            msg.role === 'assistant' ? {
+                ...msg,
+                content: msg.content.replace(/<think>[\s\S]*?<\/think>\s*/gi, '')
+            } : msg
+        )
+    ];
+
+    fetch(`${basePoint}/api/chat`, {
+        signal: controller.signal,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: chatModel,
+            messages: messagesWithSystem,
+                    max_output_tokens: 1000, // 最大输出字数
+        temperature: 0.7, // 温度,0-2之间,越高越随机
+        top_p: 0.7, // 核采样,0-1之间,越高越随机
+        repetition_penalty: 1.14,
+        })
+    }).then(response=>{
+        return response.body.getReader();
+    }).then(async reader=>{
+        const decoder = new TextDecoder('utf-8');
+        const replyStrArray = []
+        chatHistory.push({role: "assistant", content: ""})
+
+        while (true) {
+            // 读取流中的数据块
+            const { done, value } = await reader.read();
+            if (done) break;
+            const dataJson = JSON.parse(decoder.decode(value, { stream: true }))
+            replyStrArray.push(dataJson.message.content)
+            renderChatHistory(false, {role: "assistant", model: dataJson.model, content: replyStrArray.join("")})
+        }
+        return replyStrArray.join("")
+    }).then(replyRes=>{
+        // console.log(replyRes)
+    }).catch(e=>{
+        if(e.name=='AbortError') return;
+        console.error(e)
+    }).finally(()=>{
+        replyIng = false
+        controller = null
+        submitButton.textContent="发送"
+    });
+}
+
+cleanButton.addEventListener('click', e=>renderChatHistory())
+
+//渲染聊天记录
+function renderChatHistory(isNew, data) {
+    if(!data){
+        chatHistory.splice(0)
+    }else{
+        if(isNew){
+            chatHistory.push(data)
+        }else{
+            chatHistory.splice(chatHistory.length-1, 1, data)
+        }
+    }
+    chatContainer.innerHTML = ''; // Clear previous content
+
+    chatHistory.forEach(chat => {
+        const chatDiv = document.createElement('div');
+        chatDiv.className = `chat ${chat.role}`;
+
+        const roleDiv = document.createElement('div');
+        roleDiv.className = 'role';
+        roleDiv.textContent = chat.role === 'user' ? 'User' : chat.model;
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message';
+
+        // 处理 <think> 标签
+        let content = chat.content;
+        let thinkCount = 0;
+        // 处理 <think> 和 </think> 标签
+        content = content.replace(/<think>|<\/think>/gi, (match) => {
+            if (match.toLowerCase() === '<think>') {
+                inThinkBlock = true;
+                thinkCount++;
+                return `<div class="think-container">
+                    <div class="think-toggle">
+                        <span class="think-icon">🔽</span>
+                        <span>思考过程</span>
+                    </div>
+                    <div class="think-content2" style="display: block;">
+                        <pre>`;
+            } else if (match.toLowerCase() === '</think>') {
+                inThinkBlock = false;
+
+
+                const result = `</pre>
+                    </div>
+                </div>`;
+                currentThinkContent = '';
+                return result;
+            }
+        });
+
+        // 对非 <think> 内容应用 marked 解析
+        // content = content.replace(/<div class="think-container">[\s\S]*?<\/div>/gi, match => {
+        //     return '___THINK_PLACEHOLDER___' + match;
+        // });
+        content = marked.parse(content);
+        content = content.replace(/___THINK_PLACEHOLDER___([\s\S]*?)<\/div>/gi, match => {
+            return match.replace('___THINK_PLACEHOLDER___', '');
+        });
+
+        messageDiv.innerHTML = content;
+
+        chatDiv.appendChild(roleDiv);
+        chatDiv.appendChild(messageDiv);
+        chatContainer.appendChild(chatDiv);
+
+        // 添加折叠/展开功能
+        chatDiv.querySelectorAll('.think-toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const content = toggle.nextElementSibling;
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    toggle.querySelector('.think-icon').textContent = '🔽';
+                } else {
+                    content.style.display = 'none';
+                    toggle.querySelector('.think-icon').textContent = '💡';
+                }
+            });
+        });
+    });
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+
+
+
+        });
+    </script>
+</body>
+
+</html>
