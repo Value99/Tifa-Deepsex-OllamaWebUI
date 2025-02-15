@@ -1,5 +1,6 @@
 0216更新，增加系统提示词更改功能
 
+![image](https://github.com/user-attachments/assets/2a368896-90b4-46fa-9c37-e047caa1cc5f)
 
 ##一个简单的与ollama交互的网页应用在线访问
 
