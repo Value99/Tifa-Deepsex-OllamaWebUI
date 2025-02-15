@@ -195,12 +195,39 @@ option{
         width: 50%;
     }
 }
+/* 新增系统角色输入样式 */
+.system-input-container {
+    margin-bottom: 15px;
+    width: 90%;  /* 移动端默认宽度 */
+}
+.system-input-container label {
+    color: white;
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+#system-prompt {
+    width: 100%;
+    min-height: 60px;
+}
+
+/* 大屏适配 */
+@media (min-width: 993px) {
+    .system-input-container {
+        width: 50%;
+    }
+}
     </style>
 </head>
 
 <body>
     <div class="container">
         <!-- 消息区域 -->
+        <div class="system-input-container">
+            <label>系统角色设定：</label>
+            <textarea id="system-prompt" 
+                     placeholder="在此输入系统角色设定...">你现在是一个角色扮演模型，你正准备接受用户输入的角色。目前还未加载任何角色。</textarea>
+        </div>
         <div class="chat-container" id="chat-container">
             <!-- Chat history will be dynamically inserted here -->
         </div>
@@ -292,8 +319,9 @@ function sendMessage(){
 //请求对话数据
 async function requestMessage() {
     // 添加默认的system消息
+    const systemPrompt = document.getElementById('system-prompt').value;
     const messagesWithSystem = [
-        { role: "system", content: "You are a AI" },
+        { role: "system", content: systemPrompt }, // 使用动态输入
         ...chatHistory.map(msg => 
             msg.role === 'assistant' ? {
                 ...msg,
