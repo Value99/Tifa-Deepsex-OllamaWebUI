@@ -4,11 +4,11 @@
 
 - ![image](https://github.com/user-attachments/assets/2a368896-90b4-46fa-9c37-e047caa1cc5f)
 
-- ✅后端增加思维链适配
+- ✅ 轻量级网页，即开即用
 
-- ✅前端增加思维链显示
+- ✅ 前端增加思维链显示
 
-- ✅自动调用ollama模型
+- ✅ 自动调用ollama模型
 
 ## 更新日志：
 
