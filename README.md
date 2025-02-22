@@ -55,3 +55,5 @@ OLLAMA_ORIGINS: *
 
 原始代码来自
 https://github.com/Joburgess/ollama-simple-webui/tree/main
+
+- 没有原作者的智慧就无法诞生此项目，感谢原作者Joburgess的开源，有能力的大家去点个Star吧。
