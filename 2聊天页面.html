@@ -425,7 +425,7 @@ option{
             document.getElementById('param-toggle').addEventListener('click', toggleParams);
             modelSelect.addEventListener('change', e => chatModel = e.target.value);
             submitButton.addEventListener('click', sendMessage);
-            cleanButton.addEventListener('click', () => renderChatHistory());
+            // cleanButton.addEventListener('click', () => renderChatHistory());
             messageInput.addEventListener('keypress', e => {
                 if(e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -559,11 +559,15 @@ option{
 
 function renderChatHistory(isNew, data) {
 
+    if(!data){
+       
+    }else{
         if(isNew){
             chatHistory.push(data)
         }else{
             chatHistory.splice(chatHistory.length-1, 1, data)
         }
+    }
     chatContainer.innerHTML = ''; // Clear previous content
 
     chatHistory.forEach(chat => {
