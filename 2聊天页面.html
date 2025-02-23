@@ -150,6 +150,23 @@ textarea{
 #submit:active{
     background-color: #757575;
 }
+
+
+#rollback{
+    width: 5em;
+    height: 100%;
+    border: none;
+    background-color: #ffffff12;
+    color: white;
+    border-radius: .5em;
+    margin-left: 1em;
+}
+#rollback:hover{
+    background-color: #e0e0e0;
+}
+#rollback:active{
+    background-color: #757575;
+}
 #clean{
     width: 5em;
     height: 100%;
@@ -217,20 +234,106 @@ option{
         width: 50%;
     }
 }
+/* 参数调整窗口 */
+/* 参数面板 */
+#param-window {
+    position: fixed;
+    bottom: 70px;
+    right: 20px;
+    background: #262626;
+    border: 1px solid #444;
+    border-radius: 8px;
+    overflow: hidden;
+    width: 220px;
+    transition: all 0.3s ease;
+}
+
+.param-header {
+    padding: 8px 12px;
+    background: #2a2a2a;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+}
+
+.param-header:hover {
+    background: #303030;
+}
+
+.toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+.param-content {
+    padding: 10px;
+    max-height: 500px;
+    transition: all 0.3s ease;
+}
+
+#param-window.collapsed .param-content {
+    max-height: 0;
+    padding: 0 10px;
+    overflow: hidden;
+}
+
+#param-window.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.param-item {
+    margin: 6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.param-item label {
+    color: #e0e0e0;
+    font-size: 0.85em;
+    flex-shrink: 0;
+}
+
+.param-item input {
+    width: 80px;
+    padding: 4px 8px;
+    background: #ffffff12;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: white;
+    font-size: 0.9em;
+}
+
+#save-params, #export-chat {
+    flex: 1;
+    padding: 6px;
+    background: #ffffff12;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+}
+
+#save-params:hover, #export-chat:hover {
+    background: #ffffff24;
+}
+
+#save-params:active, #export-chat:active {
+    background: #ffffff36;
+}
     </style>
 </head>
 
+
 <body>
     <div class="container">
-        <!-- 消息区域 -->
         <div class="system-input-container">
             <label>系统角色设定：</label>
             <textarea id="system-prompt" 
                      placeholder="在此输入系统角色设定...">你现在是一个角色扮演模型，你正准备接受用户输入的角色。目前还未加载任何角色。</textarea>
         </div>
-        <div class="chat-container" id="chat-container">
-            <!-- Chat history will be dynamically inserted here -->
-        </div>
+        <div class="chat-container" id="chat-container"></div>
         <div id="message-form">
             <textarea type="text" id="message-input" rows="3" placeholder="聊天内容..."></textarea>
             <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
@@ -238,153 +341,229 @@ option{
                 <div style="height: 1px;"></div>
                 <select id="models"></select>
             </div>
+            <button id="rollback">回溯</button>
             <button id="clean">清空</button>
         </div>
     </div>
 
-    <!-- JavaScript -->
+    <div id="param-window">
+        <div class="param-header" id="param-toggle">
+            <span>⚙️ 高级参数</span>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="param-content">
+            <div class="param-item">
+                <label>温度：</label>
+                <input type="number" id="temperature" step="0.1" min="0" max="2" placeholder="0.6">
+            </div>
+            <div class="param-item">
+                <label>重复惩罚：</label>
+                <input type="number" id="repeat_penalty" step="0.1" min="1" max="3" placeholder="1.1">
+            </div>
+            <div class="param-item">
+                <label>Top P：</label>
+                <input type="number" id="top_p" step="0.1" min="0" max="1" placeholder="0.6">
+            </div>
+            <div class="param-item">
+                <label>最大长度：</label>
+                <input type="number" id="max_tokens" min="100" max="8000" placeholder="1000">
+            </div>
+            <div style="display: flex; gap: 5px; margin-top: 8px;">
+                <button id="save-params">保存</button>
+                <button id="export-chat">导出记录</button>
+            </div>
+        </div>
+    </div>
+
     <script src="./utils/marked.min.js"></script>
     <script>
-        const basePoint = "http://127.0.0.1:11434"
-        let chatModel = "";//模型名称
+        const basePoint = "http://127.0.0.1:11434";
+        let chatModel = "";
+        const defaultParams = {
+            temperature: 0.6,
+            repeat_penalty: 1.1,
+            top_p: 0.6,
+            max_tokens: 1000
+        };
+        let params = {...defaultParams};
+        let chatHistory = [];
+        let replyIng = false;
+        let controller = null;
+
         document.addEventListener('DOMContentLoaded', () => {
+            // 初始化代码...
             const chatContainer = document.getElementById('chat-container');
             const submitButton = document.getElementById('submit');
             const messageInput = document.getElementById('message-input');
             const modelSelect = document.getElementById("models");
             const cleanButton = document.getElementById('clean');
 
-            const chatHistory = [];//聊天历史
-            let replyIng = false;//ai回复中
-
-            let controller = null;
-
-            loadModelTags();
-
-            //获取本地模型
-            function loadModelTags(){
-                fetch(`${basePoint}/api/tags`).then(res=>{
-                    return res.json()
-                }).then(res=>{
-                    initModels(res.models)
-                }).catch(e=>{
-                    console.error(e)
-                })
-            }
-
-            function initModels(models){
-                if(models.length<=0){
-                    return
-                }
-                chatModel = models[0].model
-                for(let model of models){
-                    modelSelect.options.add(new Option(model.name, model.model))
+            // 参数初始化
+            const savedParams = localStorage.getItem('chatParams');
+            if(savedParams) {
+                try {
+                    const parsed = JSON.parse(savedParams);
+                    params = {...defaultParams, ...parsed};
+                } catch(e) {
+                    console.error('参数加载失败，使用默认值');
                 }
             }
 
-            modelSelect.addEventListener('change', event=>{
-                chatModel = event.target.value
-            })
+            // 初始化输入值
+            document.getElementById('temperature').value = params.temperature;
+            document.getElementById('repeat_penalty').value = params.repeat_penalty;
+            document.getElementById('top_p').value = params.top_p;
+            document.getElementById('max_tokens').value = params.max_tokens;
 
-            messageInput.addEventListener('keypress', event=>{
-                if(event.keyCode===13&&messageInput.value.length>0){
-                    sendMessage()
+            // 折叠状态
+            const paramWindow = document.getElementById('param-window');
+            paramWindow.classList.toggle('collapsed', localStorage.getItem('paramCollapsed') === 'true');
+
+            // 事件监听...
+            document.getElementById('save-params').addEventListener('click', saveParams);
+            document.getElementById('export-chat').addEventListener('click', exportChat);
+            document.getElementById('param-toggle').addEventListener('click', toggleParams);
+            modelSelect.addEventListener('change', e => chatModel = e.target.value);
+            submitButton.addEventListener('click', sendMessage);
+            cleanButton.addEventListener('click', () => renderChatHistory());
+            messageInput.addEventListener('keypress', e => {
+                if(e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
                 }
-            })
-
-            submitButton.addEventListener('click', (event) => {
-                sendMessage()
             });
 
-            //发送消息
-           //发送消息
-function sendMessage(){
-    if(replyIng){
-        controller.abort();
-        submitButton.textContent="发送";
-        return;
-    }
-    if(messageInput.value.length<=0){
-        return;
-    }
-    controller = new AbortController();
-    replyIng = true;
-    event.preventDefault();
-    submitButton.textContent="停止"
-    renderChatHistory(true, {role: "user", content: messageInput.value})
-    requestMessage();
-    messageInput.value = '';
-}
+            // 其他函数...
+            loadModelTags();
 
-//请求对话数据
-async function requestMessage() {
-    // 添加默认的system消息
-    const systemPrompt = document.getElementById('system-prompt').value;
-    const messagesWithSystem = [
-        { role: "system", content: systemPrompt }, // 使用动态输入
-        ...chatHistory.map(msg => 
-            msg.role === 'assistant' ? {
-                ...msg,
-                content: msg.content.replace(/<think>[\s\S]*?<\/think>\s*/gi, '')
-            } : msg
-        )
-    ];
+            function loadModelTags() {
+                fetch(`${basePoint}/api/tags`)
+                    .then(res => res.json())
+                    .then(res => initModels(res.models))
+                    .catch(console.error);
+            }
 
-    fetch(`${basePoint}/api/chat`, {
-        signal: controller.signal,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            model: chatModel,
-            messages: messagesWithSystem,
-                    max_output_tokens: 1000, // 最大输出字数
-        temperature: 0.7, // 温度,0-2之间,越高越随机
-        top_p: 0.7, // 核采样,0-1之间,越高越随机
-        repetition_penalty: 1.14,
-        })
-    }).then(response=>{
-        return response.body.getReader();
-    }).then(async reader=>{
-        const decoder = new TextDecoder('utf-8');
-        const replyStrArray = []
-        chatHistory.push({role: "assistant", content: ""})
+            function initModels(models) {
+                if(models?.length) {
+                    chatModel = models[0].model;
+                    models.forEach(m => modelSelect.add(new Option(m.name, m.model)));
+                }
+            }
 
-        while (true) {
-            // 读取流中的数据块
-            const { done, value } = await reader.read();
-            if (done) break;
-            const dataJson = JSON.parse(decoder.decode(value, { stream: true }))
-            replyStrArray.push(dataJson.message.content)
-            renderChatHistory(false, {role: "assistant", model: dataJson.model, content: replyStrArray.join("")})
-        }
-        return replyStrArray.join("")
-    }).then(replyRes=>{
-        // console.log(replyRes)
-    }).catch(e=>{
-        if(e.name=='AbortError') return;
-        console.error(e)
-    }).finally(()=>{
-        replyIng = false
-        controller = null
-        submitButton.textContent="发送"
-    });
-}
+            function sendMessage() {
+                if(replyIng) {
+                    controller?.abort();
+                    submitButton.textContent = "发送";
+                    return;
+                }
+                
+                const message = messageInput.value.trim();
+                if(!message) return;
 
-cleanButton.addEventListener('click', e=>renderChatHistory())
+                controller = new AbortController();
+                replyIng = true;
+                submitButton.textContent = "停止";
+                renderChatHistory(true, {role: "user", content: message});
+                messageInput.value = '';
+                requestMessage();
+            }
 
+            async function requestMessage() {
+                const messagesWithSystem = [
+                    { role: "system", content: document.getElementById('system-prompt').value },
+                    ...chatHistory.map(msg => ({
+                        ...msg,
+                        content: msg.role === 'assistant' ? msg.content.replace(/<think>[\s\S]*?<\/think>/gi, '') : msg.content
+                    }))
+                ];
+
+                try {
+                    const response = await fetch(`${basePoint}/api/chat`, {
+                        signal: controller.signal,
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            model: chatModel,
+                            messages: messagesWithSystem,
+                            max_output_tokens: params.max_tokens,
+                            temperature: params.temperature,
+                            top_p: params.top_p,
+                            repetition_penalty: params.repeat_penalty
+                        })
+                    });
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let replyContent = '';
+                    
+                    chatHistory.push({role: "assistant", content: "", model: chatModel});
+
+                    while(true) {
+                        const {done, value} = await reader.read();
+                        if(done) break;
+                        
+                        const dataStr = decoder.decode(value);
+                        try {
+                            const data = JSON.parse(dataStr);
+                            replyContent += data.message?.content || '';
+                            updateLastMessage(replyContent);
+                        } catch(e) {
+                            console.error('解析错误:', e);
+                        }
+                    }
+                } catch(e) {
+                    if(e.name !== 'AbortError') console.error(e);
+                } finally {
+                    replyIng = false;
+                    submitButton.textContent = "发送";
+                }
+            }
+
+            function updateLastMessage(content) {
+                chatHistory[chatHistory.length-1].content = content;
+                renderChatHistory(false, chatHistory[chatHistory.length-1]);
+            }
+
+        document.getElementById('rollback').addEventListener('click', () => {
+            if(chatHistory.length === 0) return;
+
+            let deleteCount = 0;
+            const lastMessage = chatHistory[chatHistory.length - 1];
+
+            // 情况1：最后一条是助理回复
+            if(lastMessage.role === 'assistant') {
+                // 确保前面有用户消息
+                if(chatHistory.length >= 2 && chatHistory[chatHistory.length-2].role === 'user') {
+                    deleteCount = 2;
+                } else {
+                    deleteCount = 1; // 异常情况：只有助理没有用户
+                }
+            }
+            // 情况2：最后一条是用户消息
+            else if(lastMessage.role === 'user') {
+                deleteCount = 1;
+            }
+
+            if(deleteCount > 0) {
+                chatHistory.splice(-deleteCount, deleteCount);
+                renderChatHistory();
+            }
+        });
 //渲染聊天记录
+
+        // 修改原有的清空按钮事件监听
+        document.getElementById('clean').addEventListener('click', () => {
+            chatHistory = [];
+            renderChatHistory();
+        });
+
 function renderChatHistory(isNew, data) {
-    if(!data){
-        chatHistory.splice(0)
-    }else{
+
         if(isNew){
             chatHistory.push(data)
         }else{
             chatHistory.splice(chatHistory.length-1, 1, data)
         }
-    }
     chatContainer.innerHTML = ''; // Clear previous content
 
     chatHistory.forEach(chat => {
@@ -458,10 +637,40 @@ function renderChatHistory(isNew, data) {
 }
 
 
+            function saveParams() {
+                params = {
+                    temperature: parseFloat(document.getElementById('temperature').value) || defaultParams.temperature,
+                    repeat_penalty: parseFloat(document.getElementById('repeat_penalty').value) || defaultParams.repeat_penalty,
+                    top_p: parseFloat(document.getElementById('top_p').value) || defaultParams.top_p,
+                    max_tokens: parseInt(document.getElementById('max_tokens').value) || defaultParams.max_tokens
+                };
+                localStorage.setItem('chatParams', JSON.stringify(params));
+                alert('参数已保存');
+            }
 
+            function exportChat() {
+                const content = chatHistory.map(msg => 
+                    `${msg.role === 'user' ? '用户' : '助理'} (${new Date().toLocaleString()}):\n` +
+                    `${msg.content.replace(/<think>.*?<\/think>/gis, '')}\n` +
+                    '――――――――――――――――――――――――――――――――――――――――――――'
+                ).join('\n\n');
 
+                const blob = new Blob([content], {type: 'text/plain'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `chat_${new Date().toISOString().slice(0,10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            function toggleParams() {
+                paramWindow.classList.toggle('collapsed');
+                localStorage.setItem('paramCollapsed', paramWindow.classList.contains('collapsed'));
+            }
         });
     </script>
 </body>
-
 </html>
