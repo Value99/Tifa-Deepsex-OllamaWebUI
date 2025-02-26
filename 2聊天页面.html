@@ -190,9 +190,16 @@ textarea{
     border-radius: 0 0 .5em .5em;
     text-align: center;
     flex: 1;
+    max-width: 120px; /* 添加最大宽度限制 */
+    overflow: hidden; /* 防止内容溢出 */
+    text-overflow: ellipsis; /* 超出部分显示省略号 */
+    white-space: nowrap; /* 防止文本换行 */
 }
 option{
     color: black;
+    width: 120px; /* 设置选项的宽度 */
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 /** 大屏 */
 @media (max-width: 993px) {
