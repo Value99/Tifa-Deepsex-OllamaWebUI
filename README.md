@@ -2,7 +2,7 @@
 
 ## 一个简单的与ollama交互的网页应用在线访问
 
-- ![image](https://github.com/user-attachments/assets/ff1f6eb1-ecbc-4662-8d05-2a6b07544e66)
+- ![image](https://github.com/user-attachments/assets/d3d9f21b-adb3-4dcc-8365-f501d78b9692)
 
 - ✅ 轻量级网页，即开即用
 
@@ -16,6 +16,7 @@
 
   - 增加更多设置功能
   - 增加深度思考按钮（需要配合最新Tifa-DeepsexV2-Cot-0301模型）[点击跳转huggingface](https://huggingface.co/ValueFX9507/Tifa-DeepsexV2-7b-MGRPO-GGUF-Q4)
+  - 新增可控思考级别
   - 增加欢迎界面
   - 自动保存对话记录
   - 增加列表功能
