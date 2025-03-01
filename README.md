@@ -2,7 +2,7 @@
 
 ## 一个简单的与ollama交互的网页应用在线访问
 
-- ![image](https://github.com/user-attachments/assets/d3d9f21b-adb3-4dcc-8365-f501d78b9692)
+- ![image](https://github.com/user-attachments/assets/d4be109b-0bdd-4351-9326-0258c35923e5)
 
 - ✅ 轻量级网页，即开即用
 
@@ -11,6 +11,10 @@
 - ✅ 自动调用ollama模型
 
 ## 更新日志：
+
+- 0302更新
+
+  - 美化页面
 
 - 0301更新
 
