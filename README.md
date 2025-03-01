@@ -2,7 +2,7 @@
 
 ## 一个简单的与ollama交互的网页应用在线访问
 
-- ![image](https://github.com/user-attachments/assets/2c577b03-a8e3-42ed-9b32-34a00391b613)
+- ![image](https://github.com/user-attachments/assets/ff1f6eb1-ecbc-4662-8d05-2a6b07544e66)
 
 - ✅ 轻量级网页，即开即用
 
@@ -12,6 +12,17 @@
 
 ## 更新日志：
 
+- 0301更新
+
+  - 增加更多设置功能
+  - 增加深度思考按钮（需要配合最新Tifa-DeepsexV2模型）
+  - 增加欢迎界面
+  - 自动保存对话记录
+  - 增加列表功能
+  - 增加手机适配
+  - 增加自定义API功能
+  - 降低默认重复惩罚
+    
 - 0223更新
 
   - 增加高级参数调节功能
