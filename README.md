@@ -15,7 +15,7 @@
 - 0301更新
 
   - 增加更多设置功能
-  - 增加深度思考按钮（需要配合最新Tifa-DeepsexV2-Cot-0301模型）[点击下载](https://huggingface.co/ValueFX9507/Tifa-DeepsexV2-7b-MGRPO-GGUF-Q4)
+  - 增加深度思考按钮（需要配合最新Tifa-DeepsexV2-Cot-0301模型）[点击跳转huggingface](https://huggingface.co/ValueFX9507/Tifa-DeepsexV2-7b-MGRPO-GGUF-Q4)
   - 增加欢迎界面
   - 自动保存对话记录
   - 增加列表功能
