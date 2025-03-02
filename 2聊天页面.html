@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Ollama 聊天</title>
     <!-- CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
 body {
     margin: 0;
@@ -229,6 +230,12 @@ body {
 .example-title {
     font-weight: bold;
     margin-bottom: 8px;
+}
+
+
+.example-text {
+    font-size: 13px;
+    color: #ccc;
 }
 
 .chat {
@@ -676,7 +683,7 @@ pre {
 }
 
 .dropdown-item {
-    font-weight: 100;
+    font-weight: 500;
     padding: 10px 12px;
     color: #fff; /* 白色文字 */
     transition: background-color 0.2s;
@@ -740,6 +747,95 @@ pre {
       }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  .message-actions {
+    opacity: 0;
+    margin-top: -10px;
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+    gap: 5px;
+    transition: opacity 0.3s ease;
+  }
+  
+  .chat.assistant:hover .message-actions {
+    opacity: 1;
+  }
+  
+  .action-btn {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 5px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    transform: translateY(5px);
+    opacity: 0;
+  }
+  
+  .chat.assistant:hover .action-btn {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  
+  /* Add staggered delay for each button to create a sequential appearance */
+  .chat.assistant:hover .action-btn:nth-child(1) {
+    transition-delay: 0.05s;
+  }
+  
+  .chat.assistant:hover .action-btn:nth-child(2) {
+    transition-delay: 0.1s;
+  }
+  
+  .action-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #555;
+  }
+  
+  /* Keep the rest of your CSS the same */
+  .toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+  }
+  
+  .toast {
+    background-color: #333;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+/*    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);*/
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+
+
+
+
     </style>
 </head>
 
@@ -749,6 +845,7 @@ pre {
     <div id="loading-screen">
         <div class="tifa-text">Ollama</div>
     </div>
+    <div class="toast-container" id="toast-container"></div>
     <div class="sidebar">
         <div class="sidebar-header">
             <button class="new-chat-btn">
@@ -782,19 +879,27 @@ pre {
                 <div class="welcome-examples">
                     <div class="example-item" data-example="写一首关于春天的诗">
                         <div class="example-title">💫 创意写作</div>
-                        <div>写一首关于春天的诗</div>
+                        <div class="example-text">写一首关于春天的诗</div>
                     </div>
                     <div class="example-item" data-example="解释量子力学的基本原理，用简单的语言">
                         <div class="example-title">📚 解释概念</div>
-                        <div>解释量子力学的基本原理，用简单的语言</div>
+                        <div class="example-text">解释量子力学的基本原理，用简单的语言</div>
                     </div>
                     <div class="example-item" data-example="如何制作一个传统的意大利提拉米苏？">
                         <div class="example-title">🍳 食谱指导</div>
-                        <div>如何制作一个传统的意大利提拉米苏？</div>
+                        <div class="example-text">如何制作一个传统的意大利提拉米苏？</div>
                     </div>
                     <div class="example-item" data-example="帮我分析以下Python代码的效率问题:\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)">
                         <div class="example-title">💻 代码分析</div>
-                        <div>帮我分析Python代码的效率问题</div>
+                        <div class="example-text">帮我分析Python代码的效率问题</div>
+                    </div>
+                    <div class="example-item" data-example="帮我规划一个三天两夜的北京行程，包含主要景点">
+                        <div class="example-title">✈️ 旅行规划</div>
+                        <div class="example-text">北京三日游行程规划</div>
+                    </div>
+                    <div class="example-item" data-example="制定一个适合初学者的两周居家健身计划">
+                        <div class="example-title">🏋️ 健身计划</div>
+                        <div class="example-text">新手两周居家健身方案</div>
                     </div>
                 </div>
             </div>
@@ -1428,10 +1533,11 @@ function setActiveConversation(id) {
             { role: "system", content: systemPrompt },
             ...chatHistory.map(msg => ({
                 ...msg,
-                content: msg.role === 'assistant' ? msg.content.replace(/<think>[\s\S]*?<\/think>/gi, '') : msg.content
+                content: msg.role === 'assistant' ? msg.content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()  : msg.content.trim()
             }))
         ];
-        
+
+        console.log(JSON.stringify(messagesWithSystem, null, 2));
         // 如果启用了深度思考，添加指令
      // 根据深度思考级别添加指令
      if (deepThinkingLevel > 0 && messagesWithSystem.length > 1) {
@@ -1541,33 +1647,31 @@ try {
         renderChatHistory(false, chatHistory[chatHistory.length-1]);
     }
 
-    function renderChatHistory(isNew = false, data = null) {
-        if(data){
-            if(isNew){
-                chatHistory.push(data);
-            }else{
-                chatHistory.splice(chatHistory.length-1, 1, data);
-            }
+function renderChatHistory(isNew = false, data = null) {
+    if(data){
+        if(isNew){
+            chatHistory.push(data);
+        }else{
+            chatHistory.splice(chatHistory.length-1, 1, data);
         }
-        
-        if (chatHistory.length === 0) {
-            updateWelcomeVisibility();
-            return;
-        }
-        
-        chatContainer.innerHTML = ''; // 清除之前的内容
-        
-    chatHistory.forEach(chat => {
+    }
+    if (chatHistory.length === 0) {
+        updateWelcomeVisibility();
+        return;
+    }
+    chatContainer.innerHTML = ''; // 清除之前的内容
+    
+    chatHistory.forEach((chat, index) => {
         const chatDiv = document.createElement('div');
         chatDiv.className = `chat ${chat.role}`;
-
+        
         const roleDiv = document.createElement('div');
         roleDiv.className = 'role';
         roleDiv.textContent = chat.role === 'user' ? 'User' : chat.model;
-
+        
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message';
-
+        
         // 处理 <think> 标签
         let content = chat.content;
         let thinkCount = 0;
@@ -1587,8 +1691,6 @@ try {
                         <pre>`;
             } else if (match.toLowerCase() === '</think>') {
                 inThinkBlock = false;
-
-
                 const result = `</pre>
                     </div>
                 </div>`;
@@ -1596,38 +1698,179 @@ try {
                 return result;
             }
         });
-
-        // 对非 <think> 内容应用 marked 解析
-        // content = content.replace(/<div class="think-container">[\s\S]*?<\/div>/gi, match => {
-        //     return '___THINK_PLACEHOLDER___' + match;
-        // });
+        
         content = marked.parse(content);
         content = content.replace(/___THINK_PLACEHOLDER___([\s\S]*?)<\/div>/gi, match => {
             return match.replace('___THINK_PLACEHOLDER___', '');
         });
-
+        
         messageDiv.innerHTML = content;
-
-        // chatDiv.appendChild(roleDiv);
         chatDiv.appendChild(messageDiv);
+        
+        // 添加消息操作区域（仅对助手消息添加）
+        if (chat.role === 'assistant') {
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'message-actions';
+            
+            // 创建复制按钮
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'action-btn copy-btn';
+            copyBtn.title = '复制内容';
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+            copyBtn.addEventListener('click', () => {
+                copyMessageContent(chat.content);
+            });
+            
+            // 创建重新生成按钮
+            const regenerateBtn = document.createElement('button');
+            regenerateBtn.className = 'action-btn regenerate-btn';
+            regenerateBtn.title = '重新生成';
+            regenerateBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            regenerateBtn.dataset.index = index;
+            regenerateBtn.addEventListener('click', () => {
+                regenerateMessage(index);
+            });
+            
+            // 预留扩展按钮位置 - 编辑按钮示例
+            // const editBtn = document.createElement('button');
+            // editBtn.className = 'action-btn edit-btn';
+            // editBtn.title = '编辑提示';
+            // editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+            // editBtn.addEventListener('click', () => {
+            //     editMessage(index);
+            // });
+            // actionsDiv.appendChild(editBtn);
+            
+            actionsDiv.appendChild(copyBtn);
+            actionsDiv.appendChild(regenerateBtn);
+            chatDiv.appendChild(actionsDiv);
+        }
+        
         chatContainer.appendChild(chatDiv);
-
+        
         // 添加折叠/展开功能
         chatDiv.querySelectorAll('.think-toggle').forEach(toggle => {
             toggle.addEventListener('click', () => {
                 const content = toggle.nextElementSibling;
-if (content.style.display === 'none') {
-    content.style.display = 'block';
-    toggle.querySelector('svg').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15.75l7.5-7.5 7.5 7.5"></path>';
-} else {
-    content.style.display = 'none';
-    toggle.querySelector('svg').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 8.25l7.5 7.5 7.5-7.5"></path>';
-}
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    toggle.querySelector('svg').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15.75l7.5-7.5 7.5 7.5"></path>';
+                } else {
+                    content.style.display = 'none';
+                    toggle.querySelector('svg').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 8.25l7.5 7.5 7.5-7.5"></path>';
+                }
             });
         });
     });
+    
     chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+
+
+
+
+
+
+
+
+// 复制消息内容
+function copyMessageContent(content) {
+    // 移除<think>标签和内容
+    const cleanContent = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+    
+    // 使用clipboard API复制文本
+    navigator.clipboard.writeText(cleanContent)
+        .then(() => {
+            showToast('已复制到剪贴板');
+        })
+        .catch(err => {
+            console.error('复制失败:', err);
+            // 备用方法
+            const textarea = document.createElement('textarea');
+            textarea.value = cleanContent;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('已复制到剪贴板');
+        });
+}
+
+// 重新生成消息
+// 重新生成消息
+function regenerateMessage(index) {
+    // 确保index是助手消息且之前有用户消息
+    if (index > 0 && chatHistory[index].role === 'assistant') {
+        let userMsgIndex = index - 1;
+        
+        // 找到前一条用户消息
+        while (userMsgIndex >= 0 && chatHistory[userMsgIndex].role !== 'user') {
+            userMsgIndex--;
+        }
+        
+        if (userMsgIndex >= 0) {
+            // 保存用户消息，因为我们需要它来重新生成
+            const userMessage = chatHistory[userMsgIndex].content;
+            
+            // 删除从该助手消息到结尾的所有消息
+            chatHistory = chatHistory.slice(0, index);
+            
+            // 重新渲染聊天历史
+            renderChatHistory();
+            
+            // 显示提示
+            showToast('正在重新生成...');
+            
+            // 保存当前会话
+            saveCurrentConversation();
+            
+            // 手动触发请求助手回复 - 这是关键步骤
+            controller = new AbortController();
+            replyIng = true;
+            submitButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 6L18 18M6 18L18 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            `;
+            
+            // 直接请求助手响应，无需修改聊天历史
+            requestAssistantResponse();
+        }
     }
+}
+
+// 显示提示气泡
+function showToast(message, duration = 3000) {
+    const toastContainer = document.getElementById('toast-container');
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    
+    toastContainer.appendChild(toast);
+    
+    // 显示淡入动画
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // 定时删除
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            toastContainer.removeChild(toast);
+        }, 300);
+    }, duration);
+}
+
+
+
+
+
+
+
+
 
 function updateWelcomeVisibility() {
     // 不仅检查chatHistory的长度，还确保DOM是干净的
