@@ -2,7 +2,8 @@
 
 ## 一个简单的与ollama交互的网页应用在线访问
 
-- ![image](https://github.com/user-attachments/assets/d4be109b-0bdd-4351-9326-0258c35923e5)
+- ![image](https://github.com/user-attachments/assets/35afee1b-2ad0-41f0-a30c-f99e37dd8f47)
+
 
 - ✅ 轻量级网页，即开即用
 
@@ -15,6 +16,9 @@
 - 0302更新
 
   - 美化页面
+  - 增加启动加载页面
+  - 增加复制按钮
+  - 增加重新生成按钮
 
 - 0301更新
 
