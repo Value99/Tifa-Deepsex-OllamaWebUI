@@ -3,6 +3,8 @@
 ## 一个简单的与ollama交互的网页应用在线访问
 
 - ![image](https://github.com/user-attachments/assets/35afee1b-2ad0-41f0-a30c-f99e37dd8f47)
+- ![image](https://github.com/user-attachments/assets/38046b8e-47d7-421c-b71d-e43577b36047)
+
 
 
 - ✅ 轻量级网页，即开即用
@@ -19,6 +21,8 @@
   - 增加启动加载页面
   - 增加复制按钮
   - 增加重新生成按钮
+  - 新增代码浮动显示
+  - 新增自动适配角色扮演状态栏
 
 - 0301更新
 
