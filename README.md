@@ -59,6 +59,8 @@
 - 支持更多思维链格式
 - 支持加载角色卡
 - 支持语音
+内部版本截图：
+![image](https://github.com/user-attachments/assets/56542fd7-9e3d-4f8e-bc72-26e3c370bbaa)
 
 
 ## 自动配置
