@@ -19,7 +19,7 @@
 - 0325更新
 
   - 美化页面
-  - 增加风格控制面板（需要使用Tifa-DeepsexV2-Cot-0325模型）[点击跳转huggingface](https://huggingface.co/ValueFX9507/Tifa-DeepsexV2-7b-MGRPO-GGUF-Q4)
+  - 增加风格控制面板（需要使用Tifa-DeepsexV2-NoCot-0325模型）[点击跳转huggingface](https://huggingface.co/ValueFX9507/Tifa-DeepsexV2-7b-MGRPO-GGUF-Q4)
   - 支持数学公式输出
   - 增加输出时误触
   - 状态栏更精致
