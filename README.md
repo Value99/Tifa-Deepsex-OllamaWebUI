@@ -2,6 +2,7 @@
 
 ## 一个简单的与ollama交互的网页应用在线访问
 
+- ![image](https://github.com/user-attachments/assets/56542fd7-9e3d-4f8e-bc72-26e3c370bbaa)
 - ![image](https://github.com/user-attachments/assets/35afee1b-2ad0-41f0-a30c-f99e37dd8f47)
 - ![image](https://github.com/user-attachments/assets/38046b8e-47d7-421c-b71d-e43577b36047)
 
@@ -14,6 +15,14 @@
 - ✅ 自动调用ollama模型
 
 ## 更新日志：
+
+- 0325更新
+
+  - 美化页面
+  - 增加风格控制面板（需要使用Tifa-DeepsexV2-Cot-0325模型）[点击跳转huggingface](https://huggingface.co/ValueFX9507/Tifa-DeepsexV2-7b-MGRPO-GGUF-Q4)
+  - 支持数学公式输出
+  - 增加输出时误触
+  - 状态栏更精致
 
 - 0302更新
 
@@ -59,8 +68,6 @@
 - 支持更多思维链格式
 - 支持加载角色卡
 - 支持语音
-内部版本截图：
-![image](https://github.com/user-attachments/assets/56542fd7-9e3d-4f8e-bc72-26e3c370bbaa)
 
 
 ## 自动配置
