@@ -1,1833 +1,2545 @@
 <!DOCTYPE html>
 <html lang="zh">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Ollama 聊天</title>
-    <!-- CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-    margin: 0;
-/*    font-family: Arial, sans-serif;*/
-    background-color: #222222;
-    display: flex;
-
-}
-
-/* Sidebar for conversation history */
-.sidebar {
-    width: 260px;
-    height: 100vh;
-    background-color: #151515;
-    color: white;
-    display: flex;
-    flex-direction: column;
-/*    border-right: 1px solid #444;*/
-}
-
-.sidebar-header {
-    padding: 16px 10px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-/*    border-bottom: 1px solid #444;*/
-}
-
-.conversations-list-title {
-    font-size: 14px;
-    font-weight: bold;
-    color: #aaa;
-    margin-top: 10px;
-    padding: 6px 16px;
-}
-
-
-.new-chat-btn {
-    background-color: #151515;
-    color: white;
-    border: 0px solid #444;
-    border-radius: 10px;
-    padding: 10px 15px;
-    width: 100%;
-    cursor: pointer;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.new-chat-btn:hover {
-    background-color: #ffffff24;
-}
-
-.conversations-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px;
-}
-
-.conversation-item {
-    font-size: 14px;
-    padding: 10px;
-    margin-bottom: 5px;
-    border-radius: 10px;
-    cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.conversation-item:hover {
-    background-color: #222;
-}
-
-.conversation-item.active {
-    background-color: #262626;
-}
-
-/* Main chat area */
-.main-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}
-
-/* Top bar with model selector */
-.top-bar {
-    padding: 10px 20px;
-/*    border-bottom: 1px solid #444;
-    background-color: #262626;*/
-    display: flex;
-    align-items: center;
-
-
-    background: linear-gradient(180deg, #222222 55%, #22222200 100%);
-    padding-bottom: 30px;
-    margin-bottom: -30px;
-    z-index: 1;
-}
-
-.model-selector {
-/*    background-color: #262626;
-    border: 1px solid #444;*/
-
-    background-color: #313131;
-    border: 0px;
-    color: white;
-    padding: 8px;
-    border-radius: 5px;
-    outline: none;
-    width: auto;
-    font-size: 18px;
-    font-weight: bold;
-
-}
-
-#system-prompt{
-        background: #333;
-    border: 1px solid #444;
-    color: #ccc;
-    width: 100%;
-    min-height: 80px;
-    resize: vertical;
-    margin-top: 6px;
-    font-size: 14px;
-        border-radius: 5px;
-    padding: 5px;
-    font-size: 12px;
-    width: calc(100% - 10px);
-}
-/* 默认居中样式 */
-.chat-container {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    width: 100%;
-    box-sizing: border-box;
-    position: relative;
-    max-width: 1000px;
-    margin: 0 auto;
-    left: 0; /* 初始位置 */
-    transition: left 0.5s ease; /* 添加平滑过渡效果 */
-}
-
-/* 有代码块时应用的左移样式 */
-.chat-container.has-code {
-    left: -10%; /* 向左移动，但不超过容器 */
-}
-
-
-.chat-container::-webkit-scrollbar {
-    width: 6px;
-}
-
-.chat-container::-webkit-scrollbar-thumb {
-    background-color: #555;
-    border-radius: 3px;
-}
-
-
-.conversations-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.conversations-list::-webkit-scrollbar-thumb {
-    background-color: #353535;
-    border-radius: 3px;
-}
-
-#message-input::-webkit-scrollbar {
-    width: 6px;
-}
-#message-input::-webkit-scrollbar-thumb {
-    background-color: #666;
-    border-radius: 3px;
-}
-
-/* Welcome message */
-.welcome-container {
-    display: none;
-    position: relative;
-    height: 100%;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    color: #e0e0e0;
-    text-align: center;
-    padding: 20px;
-}
-
-.welcome-title {
-    font-size: 2em;
-    margin-bottom: 20px;
-    font-weight: bold;
-}
-
-.welcome-subtitle {
-    font-size: 1.2em;
-    margin-bottom: 30px;
-    color: #c0c0c0;
-}
-
-.welcome-examples {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px;
-    max-width: 800px;
-}
-
-.example-item {
-    background-color: #3a3a3a;
-    padding: 15px;
-    border-radius: 8px;
-    max-width: 300px;
-    cursor: pointer;
-}
-
-.example-item:hover {
-    background-color: #4a4a4a;
-}
-
-.example-title {
-    font-weight: bold;
-    margin-bottom: 8px;
-}
-
-
-.example-text {
-    font-size: 13px;
-    color: #ccc;
-}
-
-.chat {
-    max-width: 80%;
-    margin: 15px auto;
-    display: flex;
-    flex-direction: column;
-}
-
-.chat.user {
-    align-items: flex-end;
-}
-
-.chat.assistant {
-    align-items: flex-start;
-}
-
-.chat .role {
-    font-weight: bold;
-    margin-bottom: 5px;
-    color: #e0e0e0;
-    font-size: 0.9em;
-}
-
-.chat .message {
-    padding: 12px 16px;
-    border-radius: 25px;
-    box-sizing: border-box;
-    line-height: 1.5;
-}
-
-.chat.user .message {
-    background: #333;
-    color: white;
-}
-
-.chat.assistant .message {
-/*    background: #3a3a3a;*/
-    color: white;
-}
-
-p {
-        margin: 8px 0px;
-}
-
-/* Input area */
-.input-container {
-    padding: 15px 20px;
-/*    border-top: 1px solid #444;
-    background-color: #262626;*/
-        background: linear-gradient(0deg, #222222 85%, #22222200 100%);
-    padding-top: 30px;
-    margin-top: -30px;
-    z-index: 1;
-}
-
-.message-form {
-    display: flex;
-    flex-direction: column;
-    max-width: 800px;
-    margin: 0 auto;
-/*    border: 1px solid #444;*/
-    border-radius: 20px;
-        padding: 5px;
-    background-color: #333;
-}
-
-.input-wrapper {
-    position: relative;
-    height: 64px;
-    margin-bottom: 10px;
-/*    border: 1px solid #444;*/
-    border-radius: 10px;
-    background-color: #333;
-        max-height: 50vh; /* 最大高度为屏幕的二分之一 */
-    overflow-y: auto; /* 超出时显示滚动条 */
-    padding: 0px;
-    margin: 0px;
-}
-
-
-.input-wrapper::-webkit-scrollbar {
-    width: 6px;
-}
-.input-wrapper::-webkit-scrollbar-thumb {
-    background-color: #666;
-    border-radius: 3px;
-}
-
-
-#message-input {
-    width: 100%;
-    min-height: 60px;
-    padding: 15px 15px 0px 15px;
-    font-size: 16px;
-    box-sizing: border-box;
-    background-color: transparent;
-    border: none;
-    outline: none;
-    color: white;
-    resize: none;
-    border-radius: 10px;
-}
-
-.input-buttons {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 10px;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 10px;
-}
-
-.pill-button {
-    border-radius: 20px;
-    padding: 6px 10px;
-    background-color: #444;
-    color: white;
-    border: none;
-    font-size: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.pill-button:hover {
-    background-color: #555;
-}
-
-.pill-button.active {
-    background-color: #2c536c;
-}
- /* 新增的高级别样式 */
-.pill-button.active-high {     
-    background-color: #6c2c36;
-    font-weight: bold;
- }
-.send-button {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: #238636;
-    color: white;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-        margin-bottom: 8px;
-}
-
-.send-button:hover {
-    background-color: #2baa43;
-}
-
-.send-button:disabled {
-    background-color: #555;
-    cursor: not-allowed;
-}
-
-/* Think container styling */
-.think-container {
-    margin: 0px 0;
-/*    border: 1px solid #555;*/
-    border-radius: 5px;
-    overflow: hidden;
-}
-
-
-
-.think-toggle {
-/*    background-color: #3a3a3a;*/
-/*    padding: 8px 12px;*/
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-}
-
-.think-icon {
-    margin-right: 8px;
-}
-
-.think-toggle span{
-    color: #aaa;
-    font-size: 14px;
-    font-weight: bold;
-}
-
-
-.think-content, .think-content2 {
-    margin: 10px 0px;
-    font-size: 13px;
-        border-left: 2px solid #666;
-/*    background-color: #2a2a2a;*/
-}
-
-
-/*.think-content2::before {
-content: "";
-    position: absolute;
-    width: 2px;
-    height: calc(100% - 130px);
-    margin-top: 5px;
-    margin-left: -8px;
-    background-color: #666;
-}*/
-
-
-.think-content pre, .think-content2 pre {
-    margin: 0;
-    white-space: pre-wrap;
-        font-size: 13px;
-        font-weight: 500;
-    border-radius: 0px;
-    background-color: transparent;
-    word-wrap: break-word;
-        color: #bbb;
-    font-family: 'Courier New', Courier, monospace;
-}
-
-/* Parameter panel */
-#param-window {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: #262626;
-    border: 1px solid #444;
-    border-radius: 8px;
-    width: 80%;
-    max-width: 500px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    z-index: 100;
-    display: none;
-}
-
-.param-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 99;
-    display: none;
-}
-
-.param-header {
-    padding: 12px 16px;
-/*    background: #2a2a2a;*/
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: white;
-    font-weight: bold;
-}
-
-.param-close {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-}
-
-.param-content {
-    padding: 16px;
-    max-height: 70vh;
-    overflow-y: auto;
-}
-
-.param-group {
-    margin-bottom: 16px;
-}
-
-.param-group-title {
-    font-size: 14px;
-    color: #e0e0e0;
-    margin-bottom: 10px;
-    font-weight: bold;
-}
-
-.param-item {
-    margin: 10px 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.param-item label {
-    color: #e0e0e0;
-    font-size: 0.85em;
-    flex-shrink: 0;
-}
-
-.param-item input, .param-item textarea {
-    background: #333;
-    border: 1px solid #444;
-    border-radius: 4px;
-    color: white;
-    padding: 6px 8px;
-}
-
-.param-item input {
-    width: 100px;
-}
-
-
-
-.param-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 16px;
-}
-
-.param-button {
-    flex: 1;
-    padding: 8px;
-    background: #444;
-    border: none;
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.param-button:hover {
-    background: #555;
-}
-
-.utility-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 16px;
-}
-
-.utility-button {
-    flex: 1;
-    padding: 10px;
-    background: #333;
-    border: 1px solid #444;
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
-}
-
-.utility-button:hover {
-    background: #3a3a3a;
-}
-
-@media (max-width: 768px) {
-    .sidebar {
-        position: absolute;
-        left: -260px;
-        transition: left 0.3s ease;
-        z-index: 100;
-    }
-    
-    .sidebar.open {
-        left: 0;
-    }
-    
-    .main-container {
-        width: 100%;
-    }
-    
-    .mobile-sidebar-toggle {
-        display: block;
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        z-index: 101;
-    }
-}
-.conversation-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.delete-conversation-btn {
-    visibility: hidden;
-    cursor: pointer;
-    color: #666;
-    padding: 2px;
-    border-radius: 3px;
-}
-
-.conversation-item:hover .delete-conversation-btn {
-    visibility: visible;
-}
-
-.delete-conversation-btn:hover {
-    color: #ff3333;
-    background-color: rgba(255,0,0,0.1);
-}
-
-
-pre {
-    background: #161616;
-    border-radius: 5px;
-    padding: 10px;
-    color: #d7d7d7;
-}
-
-
-.custom-dropdown {
-    position: relative;
-    cursor: pointer;
-    user-select: none;
-    font-size: 18px;
-    font-weight: bold;
-}
-
-.dropdown-selected {
-    padding: 8px 12px;
-    color: #aaa; /* 白色文字 */
-    border-radius: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-}
-
-
-.dropdown-selected::after {
-    content: '';
-    position: absolute;
-        right: -5px;
-    width: 12px;
-    height: 12px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2.5' stroke='%238e8ea0' class='size-3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'%3E%3C/path%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
-}
-.dropdown-menu {
-    position: absolute;
-    font-size: 14px;
-/*    top: calc(100% + 5px);*/
-    padding: 10px;
-    left: 0;
-    right: 0;
-    background-color: #333; /* 深色背景 */
-    border-radius: 15px;
-    max-height: 300px;
-    overflow-y: auto;
-    z-index: 100;
-    display: none; /* 默认隐藏 */
-/*    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);*/
-}
-
-.dropdown-menu.show {
-    display: block;
-        min-width: 200px;
-}
-
-.dropdown-item {
-    font-weight: 500;
-    padding: 10px 12px;
-    color: #fff; /* 白色文字 */
-    transition: background-color 0.2s;
-    border-radius: 10px;
-    margin: 5px;
-}
-
-.dropdown-item:hover {
-    background-color: #444; /* 选中时的深色 */
-    border-radius: 10px;
-}
-
-.dropdown-item.selected {
-/*    background-color: #555; /* 选中时的深色 */*/
-    border-radius: 10px;
-}
-
-
-
-
-#loading-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #111; /* 深灰色背景 */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-
-
-    .tifa-text {
-      font-size: 3rem;
-      font-weight: bold;
-      color: #222;
-      position: relative;
-      background: linear-gradient(
-        -90deg,
-        #353535 0%,
-        #353535 50%,
-        #888 50%,
-        #353535 65%
-      );
-      background-size: 300% auto;
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: shine 6s linear infinite;
-    }
-    
-    @keyframes shine {
-      100% {
-        background-position: -100% center;
-      }
-      0% {
-        background-position: 200% center;
-      }
-    }
-
-
-
-
-
-
-
-.teshu {
-    margin: 10px;
-    background-color: #222;
-    padding: 10px;
-    color: #ddd;
-    border-radius: 10px;
-    border: 1px solid #666;
-}
-
-
-
-
-
-
-
-  .message-actions {
-    opacity: 0;
-    margin-top: -10px;
-    text-align: right;
-    display: flex;
-    justify-content: flex-end;
-    gap: 5px;
-    transition: opacity 0.3s ease;
-  }
-  
-  .chat.assistant:hover .message-actions {
-    opacity: 1;
-  }
-  
-  .action-btn {
-    background: none;
-    border: none;
-    color: #888;
-    cursor: pointer;
-    font-size: 14px;
-    padding: 5px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    transform: translateY(5px);
-    opacity: 0;
-  }
-  
-  .chat.assistant:hover .action-btn {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  
-  /* Add staggered delay for each button to create a sequential appearance */
-  .chat.assistant:hover .action-btn:nth-child(1) {
-    transition-delay: 0.05s;
-  }
-  
-  .chat.assistant:hover .action-btn:nth-child(2) {
-    transition-delay: 0.1s;
-  }
-  
-  .action-btn:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    color: #555;
-  }
-  
-  /* Keep the rest of your CSS the same */
-  .toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-  }
-  
-  .toast {
-    background-color: #333;
-    color: white;
-    padding: 12px 20px;
-    border-radius: 15px;
-    margin-bottom: 10px;
-/*    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);*/
-    opacity: 0;
-    transform: translateY(-20px);
-    transition: opacity 0.3s, transform 0.3s;
-  }
-  
-  .toast.show {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-
-
-
-
-
-
-
-
-
-/* 浮动代码容器样式 */
-.floating-code {
-  position: fixed;
-  right: 2%;
-  top: 100px;
-  width: auto;
-  max-width: 40%;
-  max-height: 70vh;
-  background-color: #111;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  overflow: auto;
-  z-index: 100;
-  display: none;
-}
-
-.floating-code pre {
-  margin: 0;
-  padding: 16px;
-  overflow: auto;
-}
-
-.floating-code-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 16px;
-  background-color: #2d2d2d;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-}
-
-.floating-code-title {
-  color: #e0e0e0;
-  font-size: 14px;
-}
-
-.floating-code-close {
-  background: none;
-  border: none;
-  color: #e0e0e0;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-
-
-
-
-
-
-/* 键值对专用样式 */
-.key-value-container {
-    font-size: 14px;
-    padding: 10px;
-    background: #111;
-    border-radius: 4px;
-    color: #ddd;
-
-        margin: 10px;
-    padding: 10px;
-    border: 1px solid #333;
-    border-radius: 10px;
-    background-color: #222;
-}
-
-.kv-row {
-    display: flex;
-    margin: 6px 0;
-    line-height: 1.5;
-}
-
-.kv-key {
-    flex: 0 0 120px;
-    padding: 0px 10px
-    color: #222;
-    font-weight: bold;
-}
-
-.kv-value {
-    flex: 1;
-    color: #333;
-    white-space: pre-wrap;
-    text-align: end;
-    color: #ddd;
-    padding: 0px 10px;
-}
-
-.arrow {
-    color: #e74c3c;
-    margin: 0 3px;
-    font-weight: bold;
-}
-
-/* 调整pre元素样式保持兼容 */
-.floating-code pre {
-    margin: 0;
-    padding: 10px;
-    background: #111;
-}
-
-
-    .kv-row.vertical-layout {
-        display: flex;
-        flex-direction: column;
-        margin-bottom: 12px;
-    }
-    
-    .kv-key-title {
-        font-size: 12px;
-            color: #999;
-        font-weight: bold;
-        padding: 0px;
-        margin-bottom: 4px;
-    }
-    
-    .kv-value-content {
-        font-size: 12px;
-        margin-left: 12px;
-        padding-left: 8px;
-        border-left: 2px solid #eee;
-    }
-
-    </style>
-</head>
-
-<body>
-    <!-- Sidebar for conversation history -->
-    <div id="loading-screen">
-        <div class="tifa-text">Ollama</div>
-    </div>
-    <div class="toast-container" id="toast-container"></div>
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <button class="new-chat-btn">
-                新建聊天
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 4V20M4 12H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-            </button>
-        </div>
-        <div class="conversations-list-title">对话历史</div>
-        <div class="conversations-list" id="conversations-list">
-            <!-- Conversation items will be added here dynamically -->
-        </div>
-    </div>
-    <!-- Main chat area -->
-    <div class="main-container">
-        <!-- Top bar with model selector -->
-        <div class="top-bar">
-            <div class="custom-dropdown" id="model-dropdown">
-                <div class="dropdown-selected">选择模型...</div>
-                <div class="dropdown-menu">
-                    <!-- 这里的选项会由JS动态填充 -->
-                </div>
-            </div>
-        </div>
-        <div class="welcome-container" id="welcome-container">
-            <div class="welcome-title">欢迎使用 Ollama 聊天</div>
-            <div class="welcome-subtitle">一个强大的本地AI聊天工具</div>
-            <div class="welcome-examples">
-                <div class="example-item" data-example="写一首关于春天的诗">
-                    <div class="example-title">💫 创意写作</div>
-                    <div class="example-text">写一首关于春天的诗</div>
-                </div>
-                <div class="example-item" data-example="解释量子力学的基本原理，用简单的语言">
-                    <div class="example-title">📚 解释概念</div>
-                    <div class="example-text">解释量子力学的基本原理，用简单的语言</div>
-                </div>
-                <div class="example-item" data-example="如何制作一个传统的意大利提拉米苏？">
-                    <div class="example-title">🍳 食谱指导</div>
-                    <div class="example-text">如何制作一个传统的意大利提拉米苏？</div>
-                </div>
-                <div class="example-item" data-example="帮我分析以下Python代码的效率问题:\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)">
-                    <div class="example-title">💻 代码分析</div>
-                    <div class="example-text">帮我分析Python代码的效率问题</div>
-                </div>
-                <div class="example-item" data-example="帮我规划一个三天两夜的北京行程，包含主要景点">
-                    <div class="example-title">✈️ 旅行规划</div>
-                    <div class="example-text">北京三日游行程规划</div>
-                </div>
-                <div class="example-item" data-example="制定一个适合初学者的两周居家健身计划">
-                    <div class="example-title">🏋️ 健身计划</div>
-                    <div class="example-text">新手两周居家健身方案</div>
-                </div>
-            </div>
-        </div>
-        <div class="chat-container" id="chat-container">
-            <!-- Welcome message (visible when chat is empty) -->
-            <!-- Chat messages will be added here dynamically -->
-        </div>
-        <!-- Input area -->
-        <div class="input-container">
-            <div class="message-form">
-                <div class="input-wrapper">
-                    <textarea id="message-input" placeholder="发送消息..."></textarea>
-                </div>
-                <div class="input-buttons">
-                    <div class="action-buttons">
-                        <button id="deep-thinking-toggle" class="pill-button">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM11 7H13V13H11V7ZM11 15H13V17H11V15Z" fill="currentColor" />
-                            </svg>
-                            深度思考
-                        </button>
-                        <button id="param-toggle-button" class="pill-button">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 15.5C14.21 15.5 16 13.71 16 11.5C16 9.29 14.21 7.5 12 7.5C9.79 7.5 8 9.29 8 11.5C8 13.71 9.79 15.5 12 15.5ZM19.43 12.97C19.47 12.65 19.5 12.33 19.5 12C19.5 11.67 19.47 11.34 19.43 11L21.54 9.37C21.73 9.22 21.78 8.95 21.66 8.73L19.66 5.27C19.54 5.05 19.27 4.96 19.05 5.05L16.56 6.05C16.04 5.66 15.5 5.32 14.87 5.07L14.5 2.42C14.46 2.18 14.25 2 14 2H10C9.75 2 9.54 2.18 9.5 2.42L9.13 5.07C8.5 5.32 7.96 5.66 7.44 6.05L4.95 5.05C4.73 4.96 4.46 5.05 4.34 5.27L2.34 8.73C2.21 8.95 2.27 9.22 2.46 9.37L4.57 11C4.53 11.34 4.5 11.67 4.5 12C4.5 12.33 4.53 12.65 4.57 12.97L2.46 14.63C2.27 14.78 2.22 15.05 2.34 15.27L4.34 18.73C4.46 18.95 4.73 19.04 4.95 18.95L7.44 17.95C7.96 18.34 8.5 18.68 9.13 18.93L9.5 21.58C9.54 21.82 9.75 22 10 22H14C14.25 22 14.46 21.82 14.5 21.58L14.87 18.93C15.5 18.67 16.04 18.34 16.56 17.95L19.05 18.95C19.27 19.04 19.54 18.95 19.66 18.73L21.66 15.27C21.78 15.05 21.73 14.78 21.54 14.63L19.43 12.97Z" fill="currentColor" />
-                            </svg>
-                            设置
-                        </button>
-                    </div>
-                    <button id="submit" class="send-button" disabled>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="currentColor" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Backdrop for modal -->
-    <div class="param-backdrop" id="param-backdrop"></div>
-    <!-- Advanced parameters panel -->
-    <div id="param-window">
-        <div class="param-header">
-            <span>⚙️ 高级设置</span>
-            <button class="param-close" id="param-close">×</button>
-        </div>
-        <div class="param-content">
-            <div class="param-group">
-                <div class="param-group-title">系统指令</div>
-                <textarea id="system-prompt" placeholder="输入系统指令...">您现在是一个角色扮演模型，准备接受用户的角色设定。尚未加载任何角色。</textarea>
-            </div>
-            <div class="param-group">
-                <div class="param-group-title">API设置</div>
-                <div class="param-item">
-                    <label>API地址:</label>
-                    <input type="text" id="api-base-url" placeholder="http://127.0.0.1:11434" style="width: 200px;">
-                </div>
-            </div>
-            <div class="param-group">
-                <div class="param-group-title">生成参数</div>
-                <div class="param-item">
-                    <label>温度:</label>
-                    <input type="number" id="temperature" step="0.1" min="0" max="2" placeholder="0.6">
-                </div>
-                <div class="param-item">
-                    <label>重复惩罚:</label>
-                    <input type="number" id="repeat_penalty" step="0.01" min="1" max="3" placeholder="1.06">
-                </div>
-                <div class="param-item">
-                    <label>Top P:</label>
-                    <input type="number" id="top_p" step="0.1" min="0" max="1" placeholder="0.6">
-                </div>
-                <div class="param-item">
-                    <label>最大令牌数:</label>
-                    <input type="number" id="max_tokens" min="100" max="8000" placeholder="1000">
-                </div>
-            </div>
-
-<div class="param-group">
-  <div class="param-group-title">界面设置</div>
-  <div class="param-item">
-    <label>代码浮动显示:</label>
-    <input type="checkbox" id="float-code-toggle">
-  </div>
-</div>
-            <div class="param-actions">
-                <button id="save-params" class="param-button">保存设置</button>
-            </div>
-            <div class="utility-buttons">
-                <button id="rollback" class="utility-button">撤销最后一条</button>
-                <button id="clean" class="utility-button">清空聊天</button>
-                <button id="export-chat" class="utility-button">导出聊天</button>
-            </div>
-        </div>
-    </div>
-    <script src="./utils/marked.min.js"></script>
-    <script>
-    window.addEventListener('load', function() {
-        var loadingScreen = document.getElementById('loading-screen');
-        loadingScreen.style.transition = 'opacity 0.5s';
-        loadingScreen.style.opacity = '0';
-
-        setTimeout(function() {
-            loadingScreen.style.display = 'none';
-        }, 500); // 等待0.5秒后隐藏加载动画
-    });
-
-
-    document.addEventListener('DOMContentLoaded', () => {
-        // 默认设置
-        let basePoint = "http://127.0.0.1:11434";
-        let chatModel = "";
-        const defaultParams = {
-            temperature: 0.6,
-            repeat_penalty: 1.06,
-            top_p: 0.6,
-            max_tokens: 1000
-        };
-        let params = { ...defaultParams };
-        let chatHistory = [];
-        let replyIng = false;
-        let controller = null;
-        let isDeepThinkingEnabled = false;
-        let conversations = [];
-        let activeConversationId = null;
-        let deepThinkingLevel = 0; // 0: 关闭, 1: 低, 2: 高
-        // DOM 元素
-        const chatContainer = document.getElementById('chat-container');
-        const welcomeContainer = document.getElementById('welcome-container');
-        const submitButton = document.getElementById('submit');
-        const messageInput = document.getElementById('message-input');
-        const modelDropdown = document.getElementById("model-dropdown");
-        const dropdownSelected = modelDropdown.querySelector(".dropdown-selected");
-        const dropdownMenu = modelDropdown.querySelector(".dropdown-menu");
-        const cleanButton = document.getElementById('clean');
-        const deepThinkingToggle = document.getElementById('deep-thinking-toggle');
-        const paramToggleButton = document.getElementById('param-toggle-button');
-        const paramWindow = document.getElementById('param-window');
-        const paramBackdrop = document.getElementById('param-backdrop');
-        const paramClose = document.getElementById('param-close');
-        const conversationsList = document.getElementById('conversations-list');
-        const newChatBtn = document.querySelector('.new-chat-btn');
-        const apiBaseUrlInput = document.getElementById('api-base-url');
-        const exampleItems = document.querySelectorAll('.example-item');
-const textarea = document.getElementById('message-input');
-// 使用全局变量存储浮动代码框的位置
-let floatingCodePosition = {
-    top: null,
-    left: null
-};
-
-textarea.addEventListener('input', function () {
-    // 重置高度，以便计算新的高度
-    this.style.height = 'auto';
-    // 设置新的高度
-    this.style.height = this.scrollHeight + 'px';
-
-    // 调整父容器的高度
-    const wrapper = this.parentElement;
-    wrapper.style.height = this.scrollHeight+4 + 'px';
-
-    // 向上延伸
-    const deltaHeight = this.scrollHeight - this.clientHeight;
-    if (deltaHeight > 0) {
-        wrapper.style.bottom = `calc(${wrapper.style.bottom || '0px'} + ${deltaHeight}px)`;
-    }
-});
-        // 初始化应用
-        initApp();
-
-        function initApp() {
-            // 加载保存的参数
-            loadSavedParams();
-
-            // 初始化参数输入值
-            document.getElementById('temperature').value = params.temperature;
-            document.getElementById('repeat_penalty').value = params.repeat_penalty;
-            document.getElementById('top_p').value = params.top_p;
-            document.getElementById('max_tokens').value = params.max_tokens;
-            apiBaseUrlInput.value = basePoint;
-
-            // 加载可用模型
-            loadModelTags();
-
-            // 加载保存的对话
-            loadConversations();
-
-            // 如果没有对话，创建一个新的
-            if (conversations.length === 0) {
-                createNewConversation();
-            } else {
-                // 加载最近的对话
-                setActiveConversation(conversations[0].id);
-            }
-
-            // 设置事件监听器
-            setupEventListeners();
-
-            // 更新欢迎区域的可见性
-            updateWelcomeVisibility();
-        }
-
-        function setupEventListeners() {
-            // 消息输入事件
-            messageInput.addEventListener('input', () => {
-                submitButton.disabled = messageInput.value.trim() === '';
-            });
-
-            messageInput.addEventListener('keypress', e => {
-                if (e.key === 'Enter' && !e.shiftKey && messageInput.value.trim() !== '') {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            });
-
-            // 按钮点击事件
-            submitButton.addEventListener('click', sendMessage);
-            cleanButton.addEventListener('click', clearChat);
-            document.getElementById('save-params').addEventListener('click', saveParams);
-            document.getElementById('export-chat').addEventListener('click', exportChat);
-            document.getElementById('rollback').addEventListener('click', undoLastMessage);
-
-            // 深度思考开关
-            deepThinkingToggle.addEventListener('click', () => {
-                // 循环切换状态：0 -> 1 -> 2 -> 0
-                deepThinkingLevel = (deepThinkingLevel + 1) % 3;
-
-                // 移除所有状态类
-                deepThinkingToggle.classList.remove('active', 'active-high');
-
-                // 根据当前状态添加对应的类
-                if (deepThinkingLevel === 1) {
-                    deepThinkingToggle.classList.add('active');
-                    deepThinkingToggle.innerHTML = `
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Tifa 聊天</title>
+		<!-- CSS -->
+		<link rel="preconnect" href="https://fonts.proxy.ustclug.org">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.proxy.ustclug.org/css2?family=Noto+Sans+SC&display=swap" rel="stylesheet">
+		<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+		<style>
+			/* * {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial,
+        'PingFang SC', 'Hiragino Sans GB', STHeiti, 'Microsoft YaHei',
+        'Microsoft JhengHei', 'Source Han Sans SC', 'Noto Sans CJK SC',
+        'Source Han Sans CN', 'Source Han Sans TC', 'Noto Sans CJK TC',
+        'WenQuanYi Micro Hei', SimSun, sans-serif;
+    font-weight: bold; 
+} */
+
+			:root {
+				/* 主题颜色变量 - 暗色模式默认值 */
+				--bg-primary: #222222;
+				--bg-secondary: #151515;
+				--bg-tertiary: #262626;
+				--bg-input: #333333;
+				--bg-code: #161616;
+				--bg-hover: #444444;
+				--bg-active: #2c536c;
+				--bg-active-true: #55aa69;
+				--bg-active-high: #6c2c36;
+
+				--text-primary: #ffffff;
+				--text-secondary: #e0e0e0;
+				--text-tertiary: #cccccc;
+				--text-muted: #aaaaaa;
+				--text-placeholder: #888888;
+
+				--border-color: #444444;
+				--border-light: #353535;
+				--border-dark: #666666;
+
+				--button-primary: #238636;
+				--button-primary-hover: #2baa43;
+				--button-secondary: #444444;
+				--button-secondary-hover: #555555;
+
+				--scrollbar-thumb: #555555;
+				--scrollbar-thumb-light: #353535;
+				--scrollbar-thumb-input: #666666;
+
+				--shadow-color: rgba(0, 0, 0, 0.5);
+				--overlay-color: rgba(0, 0, 0, 0.5);
+
+				--gradient-top: linear-gradient(180deg, var(--bg-primary) 55%, rgba(34, 34, 34, 0) 100%);
+				--gradient-bottom: linear-gradient(0deg, var(--bg-primary) 85%, rgba(34, 34, 34, 0) 100%);
+			}
+
+			/* 明亮模式颜色 */
+			:root.light-mode {
+				--bg-primary: #f5f5f5;
+				--bg-secondary: #e8e8e8;
+				--bg-tertiary: #f0f0f0;
+				--bg-input: #ffffff;
+				--bg-code: #f8f8f8;
+				--bg-hover: #e0e0e0;
+				--bg-active: #d0e8ff;
+				--bg-active-true: #82ce87;
+				--bg-active-high: #ffd0d6;
+
+				--text-primary: #333333;
+				--text-secondary: #444444;
+				--text-tertiary: #555555;
+				--text-muted: #666666;
+				--text-placeholder: #777777;
+
+				--border-color: #cccccc;
+				--border-light: #dddddd;
+				--border-dark: #aaaaaa;
+
+				--button-primary: #e9e9e9;
+				--button-primary-hover: #ccc;
+				--button-secondary: #e0e0e0;
+				--button-secondary-hover: #d0d0d0;
+
+				--scrollbar-thumb: #bbbbbb;
+				--scrollbar-thumb-light: #cccccc;
+				--scrollbar-thumb-input: #aaaaaa;
+
+				--shadow-color: rgba(0, 0, 0, 0.2);
+				--overlay-color: rgba(0, 0, 0, 0.3);
+
+				--gradient-top: linear-gradient(180deg, var(--bg-primary) 55%, rgba(245, 245, 245, 0) 100%);
+				--gradient-bottom: linear-gradient(0deg, var(--bg-primary) 85%, rgba(245, 245, 245, 0) 100%);
+			}
+
+			body {
+				margin: 0;
+				background-color: var(--bg-primary);
+				display: flex;
+				color: var(--text-primary);
+			}
+
+			/* Sidebar for conversation history */
+			.sidebar {
+				width: 260px;
+				height: 100vh;
+				background-color: var(--bg-secondary);
+				color: var(--text-primary);
+				display: flex;
+				flex-direction: column;
+			}
+
+			.sidebar.disabled {
+				pointer-events: none;
+				/* 禁止鼠标事件 */
+			}
+
+			.sidebar-header {
+				padding: 16px 10px;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+
+			.conversations-list-title {
+				font-size: 14px;
+				font-weight: bold;
+				color: var(--text-muted);
+				margin-top: 10px;
+				padding: 6px 16px;
+			}
+
+			.new-chat-btn {
+				background-color: var(--bg-secondary);
+				color: var(--text-primary);
+				border: 0px solid var(--border-color);
+				border-radius: 10px;
+				padding: 10px 15px;
+				width: 100%;
+				cursor: pointer;
+				font-size: 14px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 8px;
+			}
+
+			.new-chat-btn:hover {
+				background-color: var(--bg-hover);
+			}
+
+			.conversations-list {
+				flex: 1;
+				overflow-y: auto;
+				padding: 10px;
+			}
+
+			.conversation-item {
+				font-size: 14px;
+				padding: 10px;
+				margin-bottom: 5px;
+				border-radius: 10px;
+				cursor: pointer;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.conversation-item:hover {
+				background-color: var(--bg-hover);
+			}
+
+			.conversation-item.active {
+				background-color: var(--bg-tertiary);
+			}
+
+			/* Main chat area */
+			.main-container {
+				flex: 1;
+				display: flex;
+				flex-direction: column;
+				height: 100vh;
+			}
+
+			/* Top bar with model selector */
+			.top-bar {
+				padding: 10px 20px;
+				display: flex;
+				align-items: center;
+				background: var(--gradient-top);
+				padding-bottom: 30px;
+				margin-bottom: -30px;
+				z-index: 1;
+			}
+
+			.model-selector {
+				background-color: var(--bg-input);
+				border: 0px;
+				color: var(--text-primary);
+				padding: 8px;
+				border-radius: 5px;
+				outline: none;
+				width: auto;
+				font-size: 18px;
+				font-weight: bold;
+			}
+
+			#system-prompt {
+				background: var(--bg-input);
+				border: 1px solid var(--border-color);
+				color: var(--text-tertiary);
+				width: 100%;
+				min-height: 80px;
+				resize: vertical;
+				margin-top: 6px;
+				font-size: 14px;
+				border-radius: 5px;
+				padding: 5px;
+				font-size: 12px;
+				width: calc(100% - 10px);
+			}
+
+			/* 默认居中样式 */
+			.chat-container {
+				flex: 1;
+				overflow-y: auto;
+				padding: 20px;
+				width: 100%;
+				box-sizing: border-box;
+				position: relative;
+				max-width: 1000px;
+				margin: 0 auto;
+				left: 0;
+				/* 初始位置 */
+				transition: left 0.5s ease;
+				/* 添加平滑过渡效果 */
+			}
+
+			/* 有代码块时应用的左移样式 */
+			.chat-container.has-code {
+				left: -10%;
+				/* 向左移动，但不超过容器 */
+			}
+
+			.chat-container::-webkit-scrollbar {
+				width: 6px;
+			}
+
+			.chat-container::-webkit-scrollbar-thumb {
+				background-color: var(--scrollbar-thumb);
+				border-radius: 3px;
+			}
+
+			.conversations-list::-webkit-scrollbar {
+				width: 6px;
+			}
+
+			.conversations-list::-webkit-scrollbar-thumb {
+				background-color: var(--scrollbar-thumb-light);
+				border-radius: 3px;
+			}
+
+			#message-input::-webkit-scrollbar {
+				width: 6px;
+			}
+
+			#message-input::-webkit-scrollbar-thumb {
+				background-color: var(--scrollbar-thumb-input);
+				border-radius: 3px;
+			}
+
+			textarea::-webkit-scrollbar-thumb {
+				background-color: var(--scrollbar-thumb-input);
+				border-radius: 3px;
+			}
+
+			textarea::-webkit-scrollbar {
+				width: 6px;
+			}
+
+			/* Welcome message */
+			.welcome-container {
+				display: none;
+				position: relative;
+				height: 100%;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				color: var(--text-secondary);
+				text-align: center;
+				padding: 20px;
+			}
+
+			.welcome-title {
+				font-size: 2em;
+				margin-bottom: 20px;
+				font-weight: bold;
+			}
+
+			.welcome-subtitle {
+				font-size: 1.2em;
+				margin-bottom: 30px;
+				color: var(--text-tertiary);
+			}
+
+			.welcome-examples {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: center;
+				gap: 15px;
+				max-width: 800px;
+			}
+
+			/* 当屏幕高度小于500像素时，隐藏 div */
+			@media (max-height: 830px) {
+				.welcome-examples {
+					display: none;
+				}
+			}
+
+			@media (max-width: 799px) {
+				.welcome-examples {
+					display: none;
+				}
+			}
+
+			.example-item {
+				background-color: var(--bg-input);
+				padding: 15px;
+				border-radius: 8px;
+				max-width: 300px;
+				cursor: pointer;
+			}
+
+			.example-item:hover {
+				background-color: var(--bg-hover);
+			}
+
+			.example-title {
+				font-weight: bold;
+				margin-bottom: 8px;
+			}
+
+			.example-text {
+				font-size: 13px;
+				color: var(--text-tertiary);
+			}
+
+			.chat {
+				max-width: 80%;
+				margin: 15px auto;
+				display: flex;
+				flex-direction: column;
+			}
+
+			.chat.user {
+				align-items: flex-end;
+			}
+
+			.chat.assistant {
+				align-items: flex-start;
+			}
+
+			.chat .role {
+				font-weight: bold;
+				margin-bottom: 5px;
+				color: var(--text-secondary);
+				font-size: 0.9em;
+			}
+
+			.chat .message {
+				padding: 12px 16px;
+				border-radius: 25px;
+				box-sizing: border-box;
+				line-height: 1.5;
+			}
+
+			.chat.user .message {
+				background: var(--bg-input);
+				color: var(--text-primary);
+			}
+
+			.chat.assistant .message {
+				color: var(--text-primary);
+			}
+
+			p {
+				margin: 8px 0px;
+			}
+
+			/* Input area */
+			.input-container {
+				padding: 15px 20px;
+				background: var(--gradient-bottom);
+				padding-top: 30px;
+				margin-top: -30px;
+				z-index: 1;
+			}
+
+			.message-form {
+				display: flex;
+				flex-direction: column;
+				max-width: 800px;
+				margin: 0 auto;
+				border-radius: 20px;
+				padding: 5px;
+				background-color: var(--bg-input);
+			}
+
+			.input-wrapper {
+				position: relative;
+				height: 64px;
+				margin-bottom: 10px;
+				border-radius: 10px;
+				background-color: var(--bg-input);
+				max-height: 30vh;
+				/* 最大高度为屏幕的二分之一 */
+				overflow-y: auto;
+				/* 超出时显示滚动条 */
+				padding: 0px;
+				margin: 0px;
+			}
+
+			.input-wrapper::-webkit-scrollbar {
+				width: 6px;
+			}
+
+			.input-wrapper::-webkit-scrollbar-thumb {
+				background-color: var(--scrollbar-thumb-input);
+				border-radius: 3px;
+			}
+
+			#message-input {
+				width: 100%;
+				min-height: 60px;
+				padding: 15px 15px 0px 15px;
+				font-size: 16px;
+				box-sizing: border-box;
+				background-color: transparent;
+				border: none;
+				outline: none;
+				color: var(--text-primary);
+				resize: none;
+				border-radius: 10px;
+			}
+
+			.input-buttons {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 0 10px;
+			}
+
+			.action-buttons {
+				display: flex;
+				gap: 10px;
+			}
+
+			.pill-button {
+				border-radius: 20px;
+				padding: 6px 10px;
+				background-color: var(--button-secondary);
+				color: var(--text-primary);
+				border: none;
+				font-size: 12px;
+				cursor: pointer;
+				display: flex;
+				align-items: center;
+				gap: 5px;
+			}
+
+			.pill-button:hover {
+				background-color: var(--button-secondary-hover);
+			}
+
+			.pill-button.active {
+				background-color: var(--bg-active);
+			}
+
+			/* 新增的高级别样式 */
+			.pill-button.active-high {
+				background-color: var(--bg-active-high);
+				font-weight: bold;
+			}
+
+			.send-button {
+				width: 40px;
+				height: 40px;
+				border-radius: 50%;
+				background-color: var(--button-primary);
+				color: var(--text-primary);
+				border: none;
+				cursor: pointer;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				margin-bottom: 8px;
+			}
+
+			.send-button:hover {
+				background-color: var(--button-primary-hover);
+			}
+
+			.send-button:disabled {
+				background-color: var(--button-secondary);
+				cursor: not-allowed;
+			}
+
+			/* Think container styling */
+			.think-container {
+				margin: 0px 0;
+				border-radius: 5px;
+				overflow: hidden;
+			}
+
+			.think-toggle {
+				cursor: pointer;
+				display: flex;
+				align-items: center;
+			}
+
+			.think-icon {
+				margin-right: 8px;
+			}
+
+			.think-toggle span {
+				color: var(--text-muted);
+				font-size: 14px;
+				font-weight: bold;
+			}
+
+			.think-content,
+			.think-content2 {
+				margin: 10px 0px;
+				font-size: 13px;
+				border-left: 2px solid var(--border-dark);
+			}
+
+			.think-content pre,
+			.think-content2 pre {
+				margin: 0;
+				white-space: pre-wrap;
+				font-size: 13px;
+				font-weight: 500;
+				border-radius: 0px;
+				background-color: transparent;
+				word-wrap: break-word;
+				color: var(--text-tertiary);
+				/*    font-family: 'Courier New', Courier, monospace;*/
+			}
+
+			/* Parameter panel */
+			#param-window {
+				position: fixed;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				background: var(--bg-tertiary);
+				border: 1px solid var(--border-color);
+				border-radius: 8px;
+				width: 80%;
+				max-width: 500px;
+				box-shadow: 0 4px 12px var(--shadow-color);
+				z-index: 100;
+				display: none;
+			}
+
+			.param-backdrop {
+				position: fixed;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background-color: var(--overlay-color);
+				z-index: 99;
+				display: none;
+			}
+
+			.param-header {
+				padding: 12px 16px;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				color: var(--text-primary);
+				font-weight: bold;
+			}
+
+			.param-close {
+				background: none;
+				border: none;
+				color: var(--text-primary);
+				font-size: 18px;
+				cursor: pointer;
+			}
+
+			.param-content {
+				padding: 16px;
+				max-height: 70vh;
+				overflow-y: auto;
+			}
+
+			.param-group {
+				margin-bottom: 16px;
+			}
+
+			.param-group-title {
+				font-size: 14px;
+				color: var(--text-secondary);
+				margin-bottom: 10px;
+				font-weight: bold;
+			}
+
+			.param-item {
+				margin: 10px 0;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+
+			.param-item label {
+				color: var(--text-secondary);
+				font-size: 0.85em;
+				flex-shrink: 0;
+			}
+
+			.param-item input,
+			.param-item textarea {
+				background: var(--bg-input);
+				border: 1px solid var(--border-color);
+				border-radius: 4px;
+				color: var(--text-primary);
+				padding: 6px 8px;
+			}
+
+			.param-item input {
+				width: 100px;
+			}
+
+			.param-actions {
+				display: flex;
+				gap: 10px;
+				margin-top: 16px;
+			}
+
+			.param-button {
+				flex: 1;
+				padding: 8px;
+				background: var(--button-secondary);
+				border: none;
+				border-radius: 4px;
+				color: var(--text-primary);
+				cursor: pointer;
+				font-size: 14px;
+			}
+
+			.param-button:hover {
+				background: var(--button-secondary-hover);
+			}
+
+			.utility-buttons {
+				display: flex;
+				gap: 10px;
+				margin-top: 16px;
+			}
+
+			.utility-button {
+				flex: 1;
+				padding: 10px;
+				background: var(--bg-input);
+				border: 1px solid var(--border-color);
+				border-radius: 4px;
+				color: var(--text-primary);
+				cursor: pointer;
+			}
+
+			.utility-button:hover {
+				background: var(--bg-tertiary);
+			}
+
+			@media (max-width: 768px) {
+				.sidebar {
+					position: absolute;
+					left: -260px;
+					transition: left 0.3s ease;
+					z-index: 100;
+				}
+
+				.sidebar.open {
+					left: 0;
+				}
+
+				.main-container {
+					width: 100%;
+				}
+
+				.mobile-sidebar-toggle {
+					display: block;
+					position: absolute;
+					top: 10px;
+					left: 10px;
+					z-index: 101;
+				}
+			}
+
+			.delete-conversation-btn {
+				visibility: hidden;
+				cursor: pointer;
+				color: var(--text-placeholder);
+				padding: 2px;
+				border-radius: 3px;
+				width: 20px;
+				height: 20px;
+				text-align: center;
+			}
+
+			.conversation-item:hover .delete-conversation-btn {
+				visibility: visible;
+			}
+
+			.delete-conversation-btn:hover {
+				color: #ff3333;
+				background-color: rgba(255, 0, 0, 0.1);
+			}
+
+			pre {
+				background: var(--bg-code);
+				border-radius: 5px;
+				padding: 10px;
+				color: var(--text-secondary);
+				white-space: break-spaces;
+			}
+
+			.custom-dropdown {
+				position: relative;
+				cursor: pointer;
+				user-select: none;
+				font-size: 18px;
+				font-weight: bold;
+			}
+
+			.dropdown-selected {
+				padding: 8px 12px;
+				color: var(--text-muted);
+				border-radius: 6px;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.dropdown-selected::after {
+				content: '';
+				position: absolute;
+				right: -5px;
+				width: 12px;
+				height: 12px;
+				background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2.5' stroke='%238e8ea0' class='size-3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'%3E%3C/path%3E%3C/svg%3E");
+				background-repeat: no-repeat;
+				background-position: center;
+				background-size: contain;
+			}
+
+			.dropdown-menu {
+				position: absolute;
+				font-size: 14px;
+				padding: 10px;
+				left: 0;
+				right: 0;
+				background-color: var(--bg-input);
+				border-radius: 15px;
+				max-height: 500px;
+				overflow-y: auto;
+				z-index: 100;
+				display: none;
+				/* 默认隐藏 */
+			}
+
+			.dropdown-menu.show {
+				display: block;
+				min-width: 280px;
+			}
+
+			.dropdown-item {
+				font-weight: 500;
+				padding: 10px 12px;
+				color: var(--text-primary);
+				border-radius: 10px;
+				margin: 5px;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				transition: background-color 0.2s;
+			}
+
+			.dropdown-item:hover {
+				background-color: var(--bg-hover);
+				border-radius: 10px;
+			}
+
+			.dropdown-item.selected {
+				border-radius: 10px;
+			}
+
+			#loading-screen {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background-color: #111;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				z-index: 1000;
+			}
+
+			.tifa-text {
+				font-size: 3rem;
+				font-weight: bold;
+				color: #222;
+				position: relative;
+				background: linear-gradient(-90deg,
+						#353535 0%,
+						#353535 50%,
+						#888 50%,
+						#353535 65%);
+				background-size: 300% auto;
+				-webkit-background-clip: text;
+				background-clip: text;
+				-webkit-text-fill-color: transparent;
+				animation: shine 6s linear infinite;
+			}
+
+			@keyframes shine {
+				100% {
+					background-position: -100% center;
+				}
+
+				0% {
+					background-position: 200% center;
+				}
+			}
+
+			.teshu {
+				margin: 10px;
+				background-color: var(--bg-primary);
+				padding: 10px;
+				color: var(--text-secondary);
+				border-radius: 10px;
+				border: 1px solid var(--border-dark);
+			}
+
+			.message-actions {
+				opacity: 0;
+				margin-top: -10px;
+				text-align: right;
+				display: flex;
+				justify-content: flex-end;
+				gap: 5px;
+				transition: opacity 0.3s ease;
+				margin-top: -16px;
+				margin-bottom: -10px;
+			}
+
+			.chat.assistant:hover .message-actions {
+				opacity: 1;
+			}
+
+			.action-btn {
+				background: none;
+				border: none;
+				color: var(--text-placeholder);
+				cursor: pointer;
+				font-size: 14px;
+				padding: 5px;
+				border-radius: 4px;
+				transition: all 0.2s ease;
+				transform: translateY(5px);
+				opacity: 0;
+			}
+
+			.chat.assistant:hover .action-btn {
+				transform: translateY(0);
+				opacity: 1;
+			}
+
+			/* Add staggered delay for each button to create a sequential appearance */
+			.chat.assistant:hover .action-btn:nth-child(1) {
+				transition-delay: 0.05s;
+			}
+
+			.chat.assistant:hover .action-btn:nth-child(2) {
+				transition-delay: 0.1s;
+			}
+
+			.action-btn:hover {
+				background-color: rgba(0, 0, 0, 0.05);
+				color: var(--text-placeholder);
+			}
+
+			/* Keep the rest of your CSS the same */
+			.toast-container {
+				position: fixed;
+				top: 20px;
+				right: 20px;
+				z-index: 9999;
+			}
+
+			.toast {
+				background-color: var(--bg-input);
+				color: var(--text-primary);
+				padding: 12px 20px;
+				border-radius: 15px;
+				margin-bottom: 10px;
+				opacity: 0;
+				transform: translateY(-20px);
+				transition: opacity 0.3s, transform 0.3s;
+			}
+
+			.toast.show {
+				opacity: 1;
+				transform: translateY(0);
+			}
+
+			/* 浮动代码容器样式 */
+			.floating-code {
+				position: fixed;
+				right: 2%;
+				top: 100px;
+				width: auto;
+				max-width: 40%;
+				max-height: 90vh;
+				background-color: var(--bg-code);
+				border-radius: 8px;
+				transform: scale(0.85);
+				box-shadow: 0 4px 12px var(--shadow-color);
+				overflow: auto;
+				z-index: 100;
+				display: none;
+			}
+
+			.floating-code pre {
+				margin: 0;
+				padding: 16px;
+				overflow: auto;
+			}
+
+			.floating-code-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 8px 16px;
+				background-color: var(--bg-tertiary);
+				border-top-left-radius: 8px;
+				border-top-right-radius: 8px;
+			}
+
+			.floating-code-title {
+				color: var(--text-secondary);
+				font-size: 14px;
+			}
+
+			.floating-code-close {
+				background: none;
+				border: none;
+				color: var(--text-secondary);
+				font-size: 18px;
+				cursor: pointer;
+			}
+
+			/* 键值对专用样式 */
+			.key-value-container {
+				font-size: 14px;
+				padding: 10px;
+				background: var(--bg-code);
+				border-radius: 4px;
+				color: var(--text-secondary);
+				margin: 10px;
+				padding: 10px;
+				border: 1px solid var(--bg-input);
+				border-radius: 10px;
+				background-color: var(--bg-primary);
+			}
+
+			.kv-row {
+				display: flex;
+				margin: 6px 0;
+				line-height: 1.5;
+			}
+
+			.kv-key {
+				flex: 0 0 120px;
+				padding: 0px 10px;
+				font-weight: bold;
+			}
+
+			.kv-value {
+				flex: 1;
+				white-space: pre-wrap;
+				text-align: end;
+				color: var(--text-secondary);
+				padding: 0px 10px;
+			}
+
+			.arrow {
+				color: #e74c3c;
+				margin: 0 3px;
+				font-weight: bold;
+			}
+
+			/* 调整pre元素样式保持兼容 */
+			.floating-code pre {
+				margin: 0;
+				padding: 10px;
+				background: var(--bg-code);
+			}
+
+			.kv-row.vertical-layout {
+				display: flex;
+				flex-direction: column;
+				margin-bottom: 12px;
+			}
+
+			.kv-key-title {
+				font-size: 12px;
+				color: var(--text-muted);
+				font-weight: bold;
+				padding: 0px;
+				margin-bottom: 4px;
+			}
+
+			.kv-value-content {
+				font-size: 12px;
+				margin-left: 12px;
+				padding-left: 8px;
+				border-left: 2px solid var(--text-secondary);
+			}
+
+			.sidebar-toggle {
+				position: fixed;
+				top: 20px;
+				right: 80px;
+				width: 40px;
+				height: 40px;
+				border-radius: 50%;
+				background-color: transparent;
+				color: var(--text-primary);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+				z-index: 1000;
+				border: none;
+				transition: all 0.3s ease;
+			}
+
+			/* 主题切换按钮 */
+			.theme-toggle {
+				position: fixed;
+				top: 20px;
+				right: 20px;
+				width: 40px;
+				height: 40px;
+				border-radius: 50%;
+				background-color: transparent;
+				color: var(--text-primary);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+				/* 				box-shadow: 0 2px 10px var(--shadow-color); */
+				z-index: 1000;
+				border: none;
+				transition: all 0.3s ease;
+			}
+
+			.theme-toggle:hover {
+				transform: scale(1.1);
+			}
+
+			.theme-toggle i {
+				font-size: 24px;
+			}
+
+			.title-logo {
+				padding: 0px;
+				padding-top: 20px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+
+			.title-logo-text {
+				font-size: 28px;
+				font-weight: bold;
+				color: #a3a3a3;
+				margin: 0px 5px;
+			}
+
+
+
+
+
+
+			.model-info {
+				flex: 1;
+				margin-right: 15px;
+			}
+
+			.model-name {
+				font-weight: 500;
+				display: block;
+				font-weight: bold;
+				margin-bottom: 3px;
+				color: var(--text-secondary);
+			}
+
+			.model-desc {
+				font-size: 0.8em;
+				color: var(--text-muted);
+				display: block;
+			}
+
+			.checkmark {
+				width: 18px;
+				height: 18px;
+				border-radius: 50%;
+				background: #4CAF50;
+				display: none;
+				align-items: center;
+				justify-content: center;
+				color: white;
+				font-size: 12px;
+			}
+
+			.dropdown-item.selected .checkmark {
+				display: flex;
+			}
+		</style>
+	</head>
+
+	<body>
+		<!-- Sidebar for conversation history -->
+		<div id="loading-screen">
+			<div class="tifa-text">Tifa</div>
+		</div>
+		<!-- 主题切换按钮 -->
+
+		<div class="top-controls">
+			<button class="theme-toggle" id="themeToggle" title="切换主题">
+				<i class="fas fa-moon" id="themeIcon"></i>
+			</button>
+			<button class="sidebar-toggle" id="sidebarToggle" title="高级控制">
+				<i class="fas fa-sliders-h"></i>
+			</button>
+		</div>
+		<div class="toast-container" id="toast-container"></div>
+		<div class="sidebar">
+			<div class="title-logo"><img src="./svg/logo_color.svg" alt="SVG Image" width="28" height="28">
+				<div class="title-logo-text">LeftNorth</div>
+			</div>
+			<div class="sidebar-header">
+				<button class="new-chat-btn">
+					新建聊天
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M12 4V20M4 12H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+					</svg>
+				</button>
+			</div>
+			<div class="conversations-list-title">对话历史</div>
+			<div class="conversations-list" id="conversations-list">
+				<!-- Conversation items will be added here dynamically -->
+			</div>
+		</div>
+		<!-- Main chat area -->
+		<div class="main-container">
+			<!-- Top bar with model selector -->
+			<div class="top-bar">
+				<div class="custom-dropdown" id="model-dropdown">
+					<div class="dropdown-selected">选择模型...</div>
+					<div class="dropdown-menu">
+						<!-- 这里的选项会由JS动态填充 -->
+					</div>
+				</div>
+			</div>
+			<div class="welcome-container" id="welcome-container">
+				<div class="welcome-title">欢迎使用 Ollama 聊天</div>
+				<div class="welcome-subtitle">一个强大的本地AI聊天工具</div>
+				<div class="welcome-examples">
+					<div class="example-item" data-example="写一首关于春天的诗">
+						<div class="example-title">💫 创意写作</div>
+						<div class="example-text">写一首关于春天的诗</div>
+					</div>
+					<div class="example-item" data-example="解释量子力学的基本原理，用简单的语言">
+						<div class="example-title">📚 解释概念</div>
+						<div class="example-text">解释量子力学的基本原理，用简单的语言</div>
+					</div>
+					<div class="example-item" data-example="如何制作一个传统的意大利提拉米苏？">
+						<div class="example-title">🍳 食谱指导</div>
+						<div class="example-text">如何制作一个传统的意大利提拉米苏？</div>
+					</div>
+					<div class="example-item"
+						data-example="帮我分析以下Python代码的效率问题:\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)">
+						<div class="example-title">💻 代码分析</div>
+						<div class="example-text">帮我分析Python代码的效率问题</div>
+					</div>
+					<div class="example-item" data-example="帮我规划一个三天两夜的北京行程，包含主要景点">
+						<div class="example-title">✈️ 旅行规划</div>
+						<div class="example-text">北京三日游行程规划</div>
+					</div>
+					<div class="example-item" data-example="制定一个适合初学者的两周居家健身计划">
+						<div class="example-title">🏋️ 健身计划</div>
+						<div class="example-text">新手两周居家健身方案</div>
+					</div>
+				</div>
+			</div>
+			<div class="chat-container" id="chat-container">
+				<!-- Welcome message (visible when chat is empty) -->
+				<!-- Chat messages will be added here dynamically -->
+			</div>
+			<!-- Input area -->
+			<div class="input-container">
+				<div class="message-form">
+					<div class="input-wrapper">
+						<textarea id="message-input" placeholder="发送消息..."></textarea>
+					</div>
+					<div class="input-buttons">
+						<div class="action-buttons">
+							<button id="deep-thinking-toggle" class="pill-button">
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+									xmlns="http://www.w3.org/2000/svg">
+									<path
+										d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM11 7H13V13H11V7ZM11 15H13V17H11V15Z"
+										fill="currentColor" />
+								</svg>
+								深度思考
+							</button>
+							<button id="param-toggle-button" class="pill-button">
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+									xmlns="http://www.w3.org/2000/svg">
+									<path
+										d="M12 15.5C14.21 15.5 16 13.71 16 11.5C16 9.29 14.21 7.5 12 7.5C9.79 7.5 8 9.29 8 11.5C8 13.71 9.79 15.5 12 15.5ZM19.43 12.97C19.47 12.65 19.5 12.33 19.5 12C19.5 11.67 19.47 11.34 19.43 11L21.54 9.37C21.73 9.22 21.78 8.95 21.66 8.73L19.66 5.27C19.54 5.05 19.27 4.96 19.05 5.05L16.56 6.05C16.04 5.66 15.5 5.32 14.87 5.07L14.5 2.42C14.46 2.18 14.25 2 14 2H10C9.75 2 9.54 2.18 9.5 2.42L9.13 5.07C8.5 5.32 7.96 5.66 7.44 6.05L4.95 5.05C4.73 4.96 4.46 5.05 4.34 5.27L2.34 8.73C2.21 8.95 2.27 9.22 2.46 9.37L4.57 11C4.53 11.34 4.5 11.67 4.5 12C4.5 12.33 4.53 12.65 4.57 12.97L2.46 14.63C2.27 14.78 2.22 15.05 2.34 15.27L4.34 18.73C4.46 18.95 4.73 19.04 4.95 18.95L7.44 17.95C7.96 18.34 8.5 18.68 9.13 18.93L9.5 21.58C9.54 21.82 9.75 22 10 22H14C14.25 22 14.46 21.82 14.5 21.58L14.87 18.93C15.5 18.67 16.04 18.34 16.56 17.95L19.05 18.95C19.27 19.04 19.54 18.95 19.66 18.73L21.66 15.27C21.78 15.05 21.73 14.78 21.54 14.63L19.43 12.97Z"
+										fill="currentColor" />
+								</svg>
+								设置
+							</button>
+						</div>
+						<button id="submit" class="send-button" disabled>
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+								xmlns="http://www.w3.org/2000/svg">
+								<path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="currentColor" />
+							</svg>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- Backdrop for modal -->
+		<div class="param-backdrop" id="param-backdrop"></div>
+		<!-- Advanced parameters panel -->
+		<div id="param-window">
+			<div class="param-header">
+				<span>⚙️ 高级设置</span>
+				<button class="param-close" id="param-close">×</button>
+			</div>
+			<div class="param-content">
+				<div class="param-group">
+					<div class="param-group-title">系统指令</div>
+					<textarea id="system-prompt" placeholder="输入系统指令...">您现在是一个角色扮演模型，准备接受用户的角色设定。尚未加载任何角色。</textarea>
+				</div>
+				<div class="param-group">
+					<div class="param-group-title">API设置</div>
+					<div class="param-item">
+						<label>API地址:</label>
+						<input type="text" id="api-base-url" placeholder="http://127.0.0.1:11434" style="width: 200px;">
+					</div>
+				</div>
+				<div class="param-group">
+					<div class="param-group-title">生成参数</div>
+					<div class="param-item">
+						<label>温度:</label>
+						<input type="number" id="temperature" step="0.1" min="0" max="2" placeholder="0.6">
+					</div>
+					<div class="param-item">
+						<label>重复惩罚:</label>
+						<input type="number" id="repeat_penalty" step="0.01" min="1" max="3" placeholder="1.06">
+					</div>
+					<div class="param-item">
+						<label>Top P:</label>
+						<input type="number" id="top_p" step="0.1" min="0" max="1" placeholder="0.6">
+					</div>
+					<div class="param-item">
+						<label>最大令牌数:</label>
+						<input type="number" id="max_tokens" min="100" max="8000" placeholder="1000">
+					</div>
+				</div>
+
+				<div class="param-group">
+					<div class="param-group-title">界面设置</div>
+					<div class="param-item">
+						<label>代码浮动显示:</label>
+						<input type="checkbox" id="float-code-toggle">
+					</div>
+				</div>
+				<div class="param-actions">
+					<button id="save-params" class="param-button">保存设置</button>
+				</div>
+				<div class="utility-buttons">
+					<button id="rollback" class="utility-button">撤销最后一条</button>
+					<button id="clean" class="utility-button">清空聊天</button>
+					<button id="export-chat" class="utility-button">导出聊天</button>
+				</div>
+			</div>
+		</div>
+		<!-- 在</body>前添加右侧边栏 -->
+		<div class="sidebar-right">
+			<div class="param-group">
+				<div class="param-group-title">角色扮演控制(仅支持UltraV2)</div>
+
+				<!-- 文笔风格 -->
+				<div class="param-item">
+					<label>文笔风格</label>
+					<div class="style-slider-container">
+						<div class="slider-track">
+							<div class="slider-progress" id="style-progress"></div>
+						</div>
+						<input type="range" id="writing-style" min="0" max="3" step="1" value="1" class="styled-slider">
+						<div class="style-labels">
+							<span>精准</span>
+							<span>智能</span>
+							<span>文艺</span>
+							<span>发散</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- 输出字数 -->
+				<div class="param-item">
+					<label>预计输出<output id="word-count-value">200</output>字以内</label>
+					<div class="style-slider-container">
+						<div class="slider-track">
+							<div class="slider-progress" id="word-progress"></div>
+						</div>
+						<input type="range" id="word-count" min="100" max="2000" step="100" value="200"
+							class="styled-slider">
+						<div class="style-labels">
+							<span>短文</span>
+							<span>长文</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- 旁白占比 -->
+				<div class="param-item">
+					<label>回复偏好</label>
+					<div class="style-slider-container">
+						<div class="slider-track">
+							<div class="slider-progress" id="narration-progress"></div>
+						</div>
+						<input type="range" id="narration-ratio" min="1" max="5" step="1" value="2"
+							class="styled-slider">
+						<div class="style-labels">
+							<span>旁白多</span>
+							<span>对话多</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- 剧情节奏 -->
+				<div class="param-item">
+					<label>剧情节奏</label>
+					<div class="pace-buttons-setting">
+						<button class="pill-button pace-option" data-pace="slow">慢</button>
+						<button class="pill-button pace-option active" data-pace="medium">中</button>
+						<button class="pill-button pace-option" data-pace="fast">快</button>
+
+					</div>
+				</div>
+
+				<!-- 状态栏开关 -->
+				<div class="param-item switch-item">
+					<label>开启状态栏</label>
+					<label class="switch">
+						<input type="checkbox" id="status-bar-toggle" checked>
+						<span class="slider"></span>
+					</label>
+				</div>
+			</div>
+		</div>
+
+		<style>
+			/* 新增CSS */
+
+			/* 新增 CSS 样式 */
+			.style-slider-container,
+			.word-count-container,
+			.narration-slider {
+				position: relative;
+			}
+
+			.slider-track {
+				position: absolute;
+				margin: 6px 6px;
+				width: calc(100% - 12px);
+				height: 10px;
+				background: var(--border-color);
+				border-radius: 2px;
+				pointer-events: none;
+			}
+
+			.slider-progress {
+				height: 100%;
+				width: 50%;
+				/* 初始值对应默认位置 */
+				background: var(--text-primary);
+				/* 填充颜色 */
+				border-radius: 2px;
+				transition: width 0.3s ease, background 0.3s ease;
+				/* 平滑过渡效果 */
+			}
+
+			.styled-slider {
+				position: relative;
+				z-index: 1;
+				/* 确保滑动条在顶层 */
+				background: transparent !important;
+				/* 隐藏默认轨道 */
+			}
+
+
+
+
+
+
+			.sidebar-right {
+				position: absolute;
+				right: 20px;
+				top: 80px;
+				width: 260px;
+				border-radius: 20px;
+				background: var(--bg-tertiary);
+				border: 1px solid var(--border-color);
+				padding: 1rem;
+				z-index: 999;
+				opacity: 1;
+				/* 默认不透明 */
+				transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+				/* 过渡效果 */
+			}
+
+			.sidebar-right.active {
+				opacity: 0;
+				display: none;
+				/* 完全透明 */
+			}
+
+			/* 滑块样式 */
+			.styled-slider {
+				width: 100%;
+				height: 4px;
+				background: var(--border-color);
+				border-radius: 2px;
+				outline: none;
+				-webkit-appearance: none;
+			}
+
+			.styled-slider::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				width: 16px;
+				height: 16px;
+				background: var(--primary-color);
+				border-radius: 50%;
+				cursor: pointer;
+			}
+
+			.style-labels,
+			.ratio-labels {
+				display: flex;
+				justify-content: space-between;
+				/* margin-top: 0.5rem; */
+				font-size: 9px;
+				transform: scale(0.9);
+				color: var(--text-muted);
+			}
+
+			.pace-buttons-setting {
+				display: flex;
+				gap: 0.5rem;
+				margin-top: 0.5rem;
+				background-color: var(--button-secondary);
+				border-radius: 20px;
+				padding: 3px;
+			}
+
+			.pace-option.active {
+				background: var(--bg-tertiary);
+			}
+
+			.switch {
+				position: relative;
+				display: inline-block;
+				width: 40px;
+				height: 20px;
+			}
+
+			.switch input {
+				opacity: 0;
+				width: 0;
+				height: 0;
+			}
+
+			.slider {
+				position: absolute;
+				cursor: pointer;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background-color: var(--border-color);
+				transition: .4s;
+				border-radius: 20px;
+			}
+
+			.slider:before {
+				position: absolute;
+				content: "";
+				height: 16px;
+				width: 16px;
+				left: 2px;
+				bottom: 2px;
+				background-color: white;
+				transition: .4s;
+				border-radius: 50%;
+			}
+
+			input:checked+.slider {
+				background-color: var(--bg-active-true);
+			}
+
+			input:checked+.slider:before {
+				transform: translateX(20px);
+			}
+
+			.switch-item {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+		</style>
+
+		<script>
+			// 本地存储键名
+			const STORAGE_KEY = 'rp_settings';
+			const FORMATTED_KEY = 'novelSettings'; // 新增格式化存储键
+
+			const rightSidebar = document.querySelector('.sidebar-right');
+			const sidebarToggle = document.getElementById('sidebarToggle');
+
+			sidebarToggle.addEventListener('click', () => {
+				rightSidebar.classList.toggle('active');
+			});
+
+			// 初始化设置
+			let settings = {
+				style: 1,
+				wordCount: 200,
+				narration: 1,
+				pace: 'medium',
+				statusBar: true
+			};
+
+			// 统一更新进度条函数
+			function updateSlider(sliderId, progressId) {
+				const slider = document.getElementById(sliderId);
+				const progress = document.getElementById(progressId);
+				const range = slider.max - slider.min;
+				const percent = (slider.value - slider.min) / range * 100;
+				progress.style.width = percent + '%';
+			}
+
+			// 绑定所有滑动条事件
+			function initSlider(sliderId, progressId, updateHandler) {
+				const slider = document.getElementById(sliderId);
+
+				slider.addEventListener('input', () => {
+					updateSlider(sliderId, progressId);
+					if (updateHandler) updateHandler(slider.value);
+					saveSettings();
+				});
+
+				updateSlider(sliderId, progressId);
+			}
+
+			// 保存设置
+			function saveSettings() {
+				settings = {
+					style: parseInt(document.getElementById('writing-style').value),
+					wordCount: parseInt(document.getElementById('word-count').value),
+					narration: parseInt(document.getElementById('narration-ratio').value),
+					pace: document.querySelector('.pace-option.active').dataset.pace,
+					statusBar: document.getElementById('status-bar-toggle').checked
+				};
+
+				localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+				updateStatusDisplay(); // 更新时会自动存储格式化字符串
+			}
+
+			// 读取设置
+			function loadSettings() {
+				const saved = localStorage.getItem(STORAGE_KEY);
+				if (saved) {
+					try {
+						settings = JSON.parse(saved);
+						settings.style = Math.min(Math.max(settings.style, 0), 3);
+						settings.wordCount = Math.min(Math.max(settings.wordCount, 100), 2000);
+						settings.narration = Math.min(Math.max(settings.narration, 1), 5);
+
+						document.getElementById('writing-style').value = settings.style;
+						document.getElementById('word-count').value = settings.wordCount;
+						document.getElementById('narration-ratio').value = settings.narration;
+						document.getElementById('status-bar-toggle').checked = settings.statusBar;
+
+						document.querySelectorAll('.pace-option').forEach(btn => {
+							btn.classList.toggle('active', btn.dataset.pace === settings.pace);
+						});
+
+						updateSlider('writing-style', 'style-progress');
+						updateSlider('word-count', 'word-progress');
+						updateSlider('narration-ratio', 'narration-progress');
+						document.getElementById('word-count-value').textContent = settings.wordCount;
+					} catch (e) {
+						console.error('解析存储数据失败，使用默认设置');
+					}
+				}
+				updateStatusDisplay(); // 确保生成初始格式化字符串
+			}
+
+			// 生成并存储格式化字符串
+			function updateStatusDisplay() {
+				// 计算段落数
+				let paragraphSize;
+				switch (settings.pace) {
+					case 'fast':
+						paragraphSize = 90;
+						break;
+					case 'medium':
+						paragraphSize = 140;
+						break;
+					case 'slow':
+						paragraphSize = 250;
+						break;
+					default:
+						paragraphSize = 150;
+				}
+				const paragraphs = Math.round(settings.wordCount / paragraphSize);
+
+				// 处理对话占比三档
+				let dialogRatio;
+				if (settings.narration <= 2) dialogRatio = '低';
+				else if (settings.narration >= 4) dialogRatio = '高';
+				else dialogRatio = '中';
+
+				const statusOutput = `{
+		风格：${['严谨，工整，标准','清水文，标准','好文笔，活泼','深度思考，发癫文学，文艺'][settings.style]} 
+		字数：${settings.wordCount-100}字
+		段落：${paragraphs}
+		对话占比：${dialogRatio}
+		状态栏：${settings.statusBar ? '开' : '关'}
+		}`;
+
+				// 存储格式化字符串
+				localStorage.setItem(FORMATTED_KEY, statusOutput);
+				console.log(statusOutput);
+			}
+
+			// 初始化
+			document.addEventListener('DOMContentLoaded', () => {
+				initSlider('writing-style', 'style-progress');
+				initSlider('word-count', 'word-progress', (v) => {
+					document.getElementById('word-count-value').textContent = v;
+				});
+				initSlider('narration-ratio', 'narration-progress');
+
+				document.querySelectorAll('.pace-option').forEach(btn => {
+					btn.addEventListener('click', function() {
+						document.querySelectorAll('.pace-option').forEach(b => b.classList.remove(
+							'active'));
+						this.classList.add('active');
+						saveSettings();
+					});
+				});
+
+				document.getElementById('status-bar-toggle').addEventListener('change', saveSettings);
+
+				loadSettings();
+
+				// 初始化默认存储
+				if (!localStorage.getItem(FORMATTED_KEY)) {
+					saveSettings();
+				}
+			});
+		</script>
+		<script src="./utils/marked.min.js"></script>
+		<script>
+			// 主题切换功能
+			document.addEventListener('DOMContentLoaded', function() {
+				const themeToggle = document.getElementById('themeToggle');
+				const themeIcon = document.getElementById('themeIcon');
+				const root = document.documentElement;
+
+				// 检查本地存储中的主题偏好
+				const savedTheme = localStorage.getItem('theme');
+				if (savedTheme === 'light') {
+					root.classList.add('light-mode');
+					themeIcon.classList.remove('fa-moon');
+					themeIcon.classList.add('fa-sun');
+				}
+
+				// 切换主题
+				themeToggle.addEventListener('click', function() {
+					if (root.classList.contains('light-mode')) {
+						// 切换到暗色模式
+						root.classList.remove('light-mode');
+						themeIcon.classList.remove('fa-sun');
+						themeIcon.classList.add('fa-moon');
+						localStorage.setItem('theme', 'dark');
+					} else {
+						// 切换到亮色模式
+						root.classList.add('light-mode');
+						themeIcon.classList.remove('fa-moon');
+						themeIcon.classList.add('fa-sun');
+						localStorage.setItem('theme', 'light');
+					}
+
+				});
+
+				// 添加系统主题自动适应（可选）
+				const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+				function handleThemeChange(e) {
+					if (!localStorage.getItem('theme')) { // 只有用户没有手动设置主题时才自动适应
+						if (e.matches) {
+							root.classList.remove('light-mode');
+							themeIcon.classList.remove('fa-sun');
+							themeIcon.classList.add('fa-moon');
+						} else {
+							root.classList.add('light-mode');
+							themeIcon.classList.remove('fa-moon');
+							themeIcon.classList.add('fa-sun');
+						}
+					}
+				}
+
+				// 初始检查
+				if (!savedTheme) {
+					handleThemeChange(prefersDarkScheme);
+				}
+
+				// 监听系统主题变化
+				prefersDarkScheme.addEventListener('change', handleThemeChange);
+			});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			window.addEventListener('load', function() {
+				var loadingScreen = document.getElementById('loading-screen');
+				loadingScreen.style.transition = 'opacity 0.5s';
+				loadingScreen.style.opacity = '0';
+
+				setTimeout(function() {
+					loadingScreen.style.display = 'none';
+				}, 500); // 等待0.5秒后隐藏加载动画
+			});
+
+
+			document.addEventListener('DOMContentLoaded', () => {
+				// 默认设置
+				let basePoint = "http://127.0.0.1:11434";
+				let chatModel = "";
+				const defaultParams = {
+					temperature: 0.6,
+					repeat_penalty: 1.06,
+					top_p: 0.6,
+					max_tokens: 1000
+				};
+				let params = {
+					...defaultParams
+				};
+				let chatHistory = [];
+				let replyIng = false;
+				let controller = null;
+				let isDeepThinkingEnabled = false;
+				let conversations = [];
+				let activeConversationId = null;
+				let deepThinkingLevel = 0; // 0: 关闭, 1: 低, 2: 高
+				// DOM 元素
+				const chatContainer = document.getElementById('chat-container');
+				const welcomeContainer = document.getElementById('welcome-container');
+				const submitButton = document.getElementById('submit');
+				const messageInput = document.getElementById('message-input');
+				const modelDropdown = document.getElementById("model-dropdown");
+				const dropdownSelected = modelDropdown.querySelector(".dropdown-selected");
+				const dropdownMenu = modelDropdown.querySelector(".dropdown-menu");
+				const cleanButton = document.getElementById('clean');
+				const deepThinkingToggle = document.getElementById('deep-thinking-toggle');
+				const paramToggleButton = document.getElementById('param-toggle-button');
+				const paramWindow = document.getElementById('param-window');
+				const paramBackdrop = document.getElementById('param-backdrop');
+				const paramClose = document.getElementById('param-close');
+				const conversationsList = document.getElementById('conversations-list');
+				const newChatBtn = document.querySelector('.new-chat-btn');
+				const apiBaseUrlInput = document.getElementById('api-base-url');
+				const exampleItems = document.querySelectorAll('.example-item');
+				const textarea = document.getElementById('message-input');
+				// 获取元素
+				const sidebar = document.querySelector('.sidebar');
+				submitButton.disabled = false;
+
+
+
+				// 使用全局变量存储浮动代码框的位置
+				let floatingCodePosition = {
+					top: null,
+					left: null
+				};
+
+				textarea.addEventListener('input', function() {
+					// 重置高度，以便计算新的高度
+					this.style.height = 'auto';
+					// 设置新的高度
+					this.style.height = this.scrollHeight + 'px';
+
+					// 调整父容器的高度
+					const wrapper = this.parentElement;
+					wrapper.style.height = this.scrollHeight + 4 + 'px';
+
+					// 向上延伸
+					const deltaHeight = this.scrollHeight - this.clientHeight;
+					if (deltaHeight > 0) {
+						wrapper.style.bottom = `calc(${wrapper.style.bottom || '0px'} + ${deltaHeight}px)`;
+					}
+				});
+
+
+
+				function resetTextareaHeight() {
+					// 将高度设置为auto可以重置高度
+					textarea.style.height = 'auto';
+					// 由于设置了'auto'，这里需要再次设置为scrollHeight来确保显示所有文本
+					textarea.style.height = `${textarea.scrollHeight}px`;
+
+
+					// 调整父容器的高度
+					const wrapper = textarea.parentElement;
+					wrapper.style.height = textarea.scrollHeight + 4 + 'px';
+				}
+
+
+
+
+
+				// 初始化应用
+				initApp();
+
+				function initApp() {
+					// 加载保存的参数
+					loadSavedParams();
+
+					// 初始化参数输入值
+					document.getElementById('temperature').value = params.temperature;
+					document.getElementById('repeat_penalty').value = params.repeat_penalty;
+					document.getElementById('top_p').value = params.top_p;
+					document.getElementById('max_tokens').value = params.max_tokens;
+					apiBaseUrlInput.value = basePoint;
+
+					// 加载可用模型
+					loadModelTags();
+
+					// 加载保存的对话
+					loadConversations();
+
+					// 如果没有对话，创建一个新的
+					if (conversations.length === 0) {
+						createNewConversation();
+					} else {
+						// 加载最近的对话
+						setActiveConversation(conversations[0].id);
+					}
+
+					// 设置事件监听器
+					setupEventListeners();
+
+					// 更新欢迎区域的可见性
+					updateWelcomeVisibility();
+				}
+
+				function setupEventListeners() {
+					// 消息输入事件
+					messageInput.addEventListener('input', () => {
+						// submitButton.disabled = messageInput.value.trim() === '';
+					});
+
+					messageInput.addEventListener('keypress', e => {
+						if (e.key === 'Enter' && !e.shiftKey && messageInput.value.trim() !== '') {
+							e.preventDefault();
+							sendMessage();
+						}
+					});
+
+					// 按钮点击事件
+					submitButton.addEventListener('click', sendMessage);
+					cleanButton.addEventListener('click', clearChat);
+					document.getElementById('save-params').addEventListener('click', saveParams);
+					document.getElementById('export-chat').addEventListener('click', exportChat);
+					document.getElementById('rollback').addEventListener('click', undoLastMessage);
+
+					// 深度思考开关
+					deepThinkingToggle.addEventListener('click', () => {
+						// 循环切换状态：0 -> 1 -> 2 -> 0
+						deepThinkingLevel = (deepThinkingLevel + 1) % 3;
+
+						// 移除所有状态类
+						deepThinkingToggle.classList.remove('active', 'active-high');
+
+						// 根据当前状态添加对应的类
+						if (deepThinkingLevel === 1) {
+							deepThinkingToggle.classList.add('active');
+							deepThinkingToggle.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM11 7H13V13H11V7ZM11 15H13V17H11V15Z" fill="currentColor"/>
             </svg>
             深度思考：低
         `;
-                } else if (deepThinkingLevel === 2) {
-                    deepThinkingToggle.classList.add('active-high');
-                    deepThinkingToggle.innerHTML = `
+						} else if (deepThinkingLevel === 2) {
+							deepThinkingToggle.classList.add('active-high');
+							deepThinkingToggle.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM11 7H13V13H11V7ZM11 15H13V17H11V15Z" fill="currentColor"/>
             </svg>
             深度思考：高
         `;
-                } else {
-                    // 恢复原始按钮文本
-                    deepThinkingToggle.innerHTML = `
+						} else {
+							// 恢复原始按钮文本
+							deepThinkingToggle.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM11 7H13V13H11V7ZM11 15H13V17H11V15Z" fill="currentColor"/>
             </svg>
             深度思考
         `;
-                }
+						}
 
-                // 存储当前状态到localStorage
-                localStorage.setItem('deepThinkingLevel', deepThinkingLevel.toString());
-            });
+						// 存储当前状态到localStorage
+						localStorage.setItem('deepThinkingLevel', deepThinkingLevel.toString());
+					});
 
-            // 设置面板事件
-            paramToggleButton.addEventListener('click', showParamWindow);
-            paramClose.addEventListener('click', hideParamWindow);
-            paramBackdrop.addEventListener('click', hideParamWindow);
+					// 设置面板事件
+					paramToggleButton.addEventListener('click', showParamWindow);
+					paramClose.addEventListener('click', hideParamWindow);
+					paramBackdrop.addEventListener('click', hideParamWindow);
 
-            // 模型选择事件
-            // 切换下拉菜单显示/隐藏
-            modelDropdown.addEventListener('click', function(e) {
-                // 阻止事件冒泡
-                e.stopPropagation();
-                dropdownMenu.classList.toggle('show');
-            });
+					// 模型选择事件
+					// 切换下拉菜单显示/隐藏
+					modelDropdown.addEventListener('click', function(e) {
+						// 阻止事件冒泡
+						e.stopPropagation();
+						dropdownMenu.classList.toggle('show');
+					});
 
-            // 点击页面其他地方关闭下拉菜单
-            document.addEventListener('click', function() {
-                dropdownMenu.classList.remove('show');
-            });
+					// 点击页面其他地方关闭下拉菜单
+					document.addEventListener('click', function() {
+						dropdownMenu.classList.remove('show');
+					});
 
-            // 防止点击下拉菜单内部元素冒泡到document
-            dropdownMenu.addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
+					// 防止点击下拉菜单内部元素冒泡到document
+					dropdownMenu.addEventListener('click', function(e) {
+						e.stopPropagation();
+					});
 
-            // 新会话按钮
-            newChatBtn.addEventListener('click', createNewConversation);
+					// 新会话按钮
+					newChatBtn.addEventListener('click', createNewConversation);
 
-            // 示例项点击事件
-            exampleItems.forEach(item => {
-                item.addEventListener('click', () => {
-                    const exampleText = item.getAttribute('data-example');
-                    messageInput.value = exampleText;
-                    submitButton.disabled = false;
-                    messageInput.focus();
-                });
-            });
-        }
+					// 示例项点击事件
+					exampleItems.forEach(item => {
+						item.addEventListener('click', () => {
+							const exampleText = item.getAttribute('data-example');
+							messageInput.value = exampleText;
+							submitButton.disabled = false;
+							messageInput.focus();
+						});
+					});
+				}
 
-        // 选择模型
-        function selectModel(value, text) {
-            chatModel = value;
-            dropdownSelected.textContent = text;
-            // 更新选中状态样式
-            const items = dropdownMenu.querySelectorAll('.dropdown-item');
-            items.forEach(item => {
-                if (item.dataset.value === value) {
-                    item.classList.add('selected');
-                } else {
-                    item.classList.remove('selected');
-                }
-            });
-            // 关闭下拉菜单
-            dropdownMenu.classList.remove('show');
-            saveCurrentConversation();
-        }
+				// 选择模型
+				function selectModel(value, text) {
+					chatModel = value;
+					dropdownSelected.textContent = text;
+					// 更新选中状态样式
+					const items = dropdownMenu.querySelectorAll('.dropdown-item');
+					items.forEach(item => {
+						if (item.dataset.value === value) {
+							item.classList.add('selected');
+						} else {
+							item.classList.remove('selected');
+						}
+					});
+					// 关闭下拉菜单
+					dropdownMenu.classList.remove('show');
+					saveCurrentConversation();
+				}
 
-        function loadModelTags() {
-            fetch(`${basePoint}/api/tags`)
-                .then(res => res.json())
-                .then(res => {
-                    if (res.models && res.models.length) {
-                        // 清空下拉菜单
-                        dropdownMenu.innerHTML = '';
+				function loadModelTags() {
+					fetch(`${basePoint}/api/tags`)
+						.then(res => res.json())
+						.then(res => {
+							if (res.models && res.models.length) {
+								// 清空下拉菜单
+								dropdownMenu.innerHTML = '';
 
-                        // 添加选项
-                        res.models.forEach(m => {
-                            const option = document.createElement('div');
-                            option.className = 'dropdown-item';
-                            option.textContent = m.name;
-                            option.dataset.value = m.model;
+								// 添加选项
+								res.models.forEach(m => {
+									const option = document.createElement('div');
+									option.className = 'dropdown-item';
+									option.textContent = m.name;
+									option.dataset.value = m.model;
 
-                            // 点击选项事件
-                            option.addEventListener('click', function() {
-                                selectModel(m.model, m.name);
-                            });
+									// 点击选项事件
+									option.addEventListener('click', function() {
+										selectModel(m.model, m.name);
+									});
 
-                            dropdownMenu.appendChild(option);
-                        });
+									dropdownMenu.appendChild(option);
+								});
 
-                        // 设置默认模型
-                        if (res.models.length > 0) {
-                            chatModel = res.models[0].model;
-                            dropdownSelected.textContent = res.models[0].name;
+								// 设置默认模型
+								if (res.models.length > 0) {
+									chatModel = res.models[0].model;
+									dropdownSelected.textContent = res.models[0].name;
 
-                            // 如果需要，更新活动对话模型
-                            if (activeConversationId) {
-                                const activeConv = conversations.find(c => c.id === activeConversationId);
-                                if (activeConv && activeConv.model) {
-                                    chatModel = activeConv.model;
-                                    // 找到对应的模型名称
-                                    const modelObj = res.models.find(m => m.model === activeConv.model);
-                                    if (modelObj) {
-                                        dropdownSelected.textContent = modelObj.name;
-                                    }
+									// 如果需要，更新活动对话模型
+									if (activeConversationId) {
+										const activeConv = conversations.find(c => c.id === activeConversationId);
+										if (activeConv && activeConv.model) {
+											chatModel = activeConv.model;
+											// 找到对应的模型名称
+											const modelObj = res.models.find(m => m.model === activeConv.model);
+											if (modelObj) {
+												dropdownSelected.textContent = modelObj.name;
+											}
 
-                                    // 更新选中项的样式
-                                    const items = dropdownMenu.querySelectorAll('.dropdown-item');
-                                    items.forEach(item => {
-                                        if (item.dataset.value === activeConv.model) {
-                                            item.classList.add('selected');
-                                        }
-                                    });
-                                }
-                            }
-                        }
-                    }
-                })
-                .catch(err => console.error('加载模型失败:', err));
-        }
+											// 更新选中项的样式
+											const items = dropdownMenu.querySelectorAll('.dropdown-item');
+											items.forEach(item => {
+												if (item.dataset.value === activeConv.model) {
+													item.classList.add('selected');
+												}
+											});
+										}
+									}
+								}
+							}
+						})
+						.catch(err => console.error('加载模型失败:', err));
+				}
 
-        function loadConversations() {
-            const savedConversations = localStorage.getItem('conversations');
-            if (savedConversations) {
-                try {
-                    conversations = JSON.parse(savedConversations);
-                    renderConversationsList();
-                } catch (e) {
-                    console.error('加载对话失败:', e);
-                    conversations = [];
-                }
-            }
-        }
+				function loadConversations() {
+					const savedConversations = localStorage.getItem('conversations');
+					if (savedConversations) {
+						try {
+							conversations = JSON.parse(savedConversations);
+							renderConversationsList();
+						} catch (e) {
+							console.error('加载对话失败:', e);
+							conversations = [];
+						}
+					}
+				}
 
-        function renderConversationsList() {
-            conversationsList.innerHTML = '';
-            conversations.forEach(conv => {
-                const convItem = document.createElement('div');
-                convItem.className = 'conversation-item';
-                convItem.dataset.id = conv.id;
-                if (conv.id === activeConversationId) {
-                    convItem.classList.add('active');
-                }
+				function renderConversationsList() {
+					conversationsList.innerHTML = '';
+					conversations.forEach(conv => {
+						const convItem = document.createElement('div');
+						convItem.className = 'conversation-item';
+						convItem.dataset.id = conv.id;
+						if (conv.id === activeConversationId) {
+							convItem.classList.add('active');
+						}
 
-                const titleSpan = document.createElement('span');
-                titleSpan.className = 'conversation-title';
-                const title = conv.title || '新对话';
-                // 限制标题长度为10个字
-                const truncatedTitle = title.length > 10 ? title.substring(0, 10) + '...' : title;
-                titleSpan.textContent = truncatedTitle;
+						const titleSpan = document.createElement('span');
+						titleSpan.className = 'conversation-title';
+						const title = conv.title || '新对话';
+						// 限制标题长度为10个字
+						const truncatedTitle = title.length > 10 ? title.substring(0, 10) + '...' : title;
+						titleSpan.textContent = truncatedTitle;
 
-                // Create delete button
-                const deleteBtn = document.createElement('span');
-                deleteBtn.className = 'delete-conversation-btn';
-                deleteBtn.innerHTML = '×';
-                deleteBtn.title = '删除此对话';
+						// Create delete button
+						const deleteBtn = document.createElement('span');
+						deleteBtn.className = 'delete-conversation-btn';
+						deleteBtn.innerHTML = '×';
+						deleteBtn.title = '删除此对话';
 
-                // Add the conversation item click handler to the entire item
-                convItem.addEventListener('click', (e) => {
-                    // Only handle click if it's not on the delete button
-                    if (!e.target.classList.contains('delete-conversation-btn')) {
-                        setActiveConversation(conv.id);
-                    }
-                });
+						// Add the conversation item click handler to the entire item
+						convItem.addEventListener('click', (e) => {
+							// Only handle click if it's not on the delete button
+							if (!e.target.classList.contains('delete-conversation-btn')) {
+								setActiveConversation(conv.id);
+							}
+						});
 
-                // Add event listener to delete button (with stopPropagation)
-                deleteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent triggering the conversation click
-                    deleteConversation(conv.id);
-                });
+						// Add event listener to delete button (with stopPropagation)
+						deleteBtn.addEventListener('click', (e) => {
+							e.stopPropagation(); // Prevent triggering the conversation click
+							deleteConversation(conv.id);
+						});
 
-                convItem.appendChild(titleSpan);
-                convItem.appendChild(deleteBtn);
-                conversationsList.appendChild(convItem);
-            });
-        }
+						convItem.appendChild(titleSpan);
+						convItem.appendChild(deleteBtn);
+						conversationsList.appendChild(convItem);
+					});
+				}
 
-        function deleteConversation(id) {
-            if (confirm('确定要删除此对话吗？此操作不可撤销。')) {
-                // Remove the conversation from the array
-                conversations = conversations.filter(conv => conv.id !== id);
+				function deleteConversation(id) {
+					if (confirm('确定要删除此对话吗？此操作不可撤销。')) {
+						// Remove the conversation from the array
+						conversations = conversations.filter(conv => conv.id !== id);
 
-                // Save to localStorage
-                localStorage.setItem('conversations', JSON.stringify(conversations));
+						// Save to localStorage
+						localStorage.setItem('conversations', JSON.stringify(conversations));
 
-                // If the deleted conversation was active, set a new active conversation
-                if (id === activeConversationId) {
-                    if (conversations.length > 0) {
-                        setActiveConversation(conversations[0].id);
-                    } else {
-                        // No conversations left, create a new one
-                        createNewConversation();
-                    }
-                } else {
-                    // Just update the UI
-                    renderConversationsList();
-                }
-            }
-        }
+						// If the deleted conversation was active, set a new active conversation
+						if (id === activeConversationId) {
+							if (conversations.length > 0) {
+								setActiveConversation(conversations[0].id);
+							} else {
+								// No conversations left, create a new one
+								createNewConversation();
+							}
+						} else {
+							// Just update the UI
+							renderConversationsList();
+						}
+					}
+				}
 
-        function createNewConversation() {
-            // 如果存在，先保存当前对话
-            if (activeConversationId) {
-                saveCurrentConversation();
-            }
+				function createNewConversation() {
+					// 如果存在，先保存当前对话
+					if (activeConversationId) {
+						saveCurrentConversation();
+					}
 
-            // 创建新对话
-            const newConv = {
-                id: Date.now().toString(),
-                title: '新对话',
-                created: new Date().toISOString(),
-                messages: [], // 空消息数组
-                systemPrompt: document.getElementById('system-prompt').value,
-                model: chatModel
-            };
+					// 创建新对话
+					const newConv = {
+						id: Date.now().toString(),
+						title: '新对话',
+						created: new Date().toISOString(),
+						messages: [], // 空消息数组
+						systemPrompt: document.getElementById('system-prompt').value,
+						model: chatModel
+					};
 
-            // 添加到数组开头（最新的在前面）
-            conversations.unshift(newConv);
+					// 添加到数组开头（最新的在前面）
+					conversations.unshift(newConv);
 
-            // 保存到localStorage
-            localStorage.setItem('conversations', JSON.stringify(conversations));
+					// 保存到localStorage
+					localStorage.setItem('conversations', JSON.stringify(conversations));
 
-            // 设置为活动对话
-            activeConversationId = newConv.id;
+					// 设置为活动对话
+					activeConversationId = newConv.id;
 
-            // 清除聊天历史
-            chatHistory = [];
+					// 清除聊天历史
+					chatHistory = [];
 
-            // 更新UI
-            renderConversationsList();
-            chatContainer.innerHTML = ''; // 明确清除聊天容器
+					// 更新UI
+					renderConversationsList();
+					chatContainer.innerHTML = ''; // 明确清除聊天容器
 
-            // 明确设置欢迎页面可见
-            welcomeContainer.style.display = 'flex';
-        }
+					// 明确设置欢迎页面可见
+					welcomeContainer.style.display = 'flex';
+				}
 
-        function setActiveConversation(id) {
-            // 如果相同的对话已经是活动的，不做任何事
-            if (id === activeConversationId) return;
-            // 如果有当前活动对话，先保存它
-            if (activeConversationId) {
-                saveCurrentConversation();
-            }
-            activeConversationId = id;
-            const conversation = conversations.find(c => c.id === id);
-            if (conversation) {
-                // 加载对话数据
-                chatHistory = [...(conversation.messages || [])];
-                document.getElementById('system-prompt').value = conversation.systemPrompt || '';
+				function setActiveConversation(id) {
+					// 如果相同的对话已经是活动的，不做任何事
+					if (id === activeConversationId) return;
+					// 如果有当前活动对话，先保存它
+					if (activeConversationId) {
+						saveCurrentConversation();
+					}
+					activeConversationId = id;
+					const conversation = conversations.find(c => c.id === id);
+					if (conversation) {
+						// 加载对话数据
+						chatHistory = [...(conversation.messages || [])];
+						document.getElementById('system-prompt').value = conversation.systemPrompt || '';
 
-                // 如果有模型则设置
-                if (conversation.model) {
-                    chatModel = conversation.model;
-                    // 找到并更新下拉菜单显示
-                    fetch(`${basePoint}/api/tags`)
-                        .then(res => res.json())
-                        .then(res => {
-                            if (res.models && res.models.length) {
-                                const modelObj = res.models.find(m => m.model === conversation.model);
-                                if (modelObj) {
-                                    dropdownSelected.textContent = modelObj.name;
-                                }
+						// 如果有模型则设置
+						if (conversation.model) {
+							chatModel = conversation.model;
+							// 找到并更新下拉菜单显示
+							fetch(`${basePoint}/api/tags`)
+								.then(res => res.json())
+								.then(res => {
+									if (res.models && res.models.length) {
+										const modelObj = res.models.find(m => m.model === conversation.model);
+										if (modelObj) {
+											dropdownSelected.textContent = modelObj.name;
+										}
 
-                                // 更新选中项样式
-                                const items = dropdownMenu.querySelectorAll('.dropdown-item');
-                                items.forEach(item => {
-                                    item.classList.remove('selected');
-                                    if (item.dataset.value === conversation.model) {
-                                        item.classList.add('selected');
-                                    }
-                                });
-                            }
-                        });
-                }
+										// 更新选中项样式
+										const items = dropdownMenu.querySelectorAll('.dropdown-item');
+										items.forEach(item => {
+											item.classList.remove('selected');
+											if (item.dataset.value === conversation.model) {
+												item.classList.add('selected');
+											}
+										});
+									}
+								});
+						}
 
-                // 清除当前聊天显示
-                chatContainer.innerHTML = '';
-                // 只有在有消息的情况下才渲染历史
-                if (chatHistory.length > 0) {
-                    renderChatHistory();
-                }
-                // 更新侧边栏
-                renderConversationsList();
-                // 更新欢迎区域可见性 - 在渲染聊天后调用
-                updateWelcomeVisibility();
-            }
-        }
+						// 清除当前聊天显示
+						chatContainer.innerHTML = '';
+						// 只有在有消息的情况下才渲染历史
+						if (chatHistory.length > 0) {
+							renderChatHistory();
+						}
+						// 更新侧边栏
+						renderConversationsList();
+						// 更新欢迎区域可见性 - 在渲染聊天后调用
+						updateWelcomeVisibility();
+					}
+				}
 
 
-        function saveCurrentConversation() {
-            if (!activeConversationId) return;
+				function saveCurrentConversation() {
+					if (!activeConversationId) return;
 
-            const index = conversations.findIndex(c => c.id === activeConversationId);
-            if (index === -1) return;
+					const index = conversations.findIndex(c => c.id === activeConversationId);
+					if (index === -1) return;
 
-            // 更新对话数据
-            conversations[index].messages = [...chatHistory];
-            conversations[index].systemPrompt = document.getElementById('system-prompt').value;
-            conversations[index].model = chatModel;
+					// 更新对话数据
+					conversations[index].messages = [...chatHistory];
+					conversations[index].systemPrompt = document.getElementById('system-prompt').value;
+					conversations[index].model = chatModel;
 
-            // 如果有消息，更新标题
-            if (chatHistory.length > 0 && chatHistory[0].role === 'user') {
-                // 使用第一条用户消息作为标题（截断）
-                let title = chatHistory[0].content.trim();
-                title = title.split('\n')[0]; // 只取第一行
-                if (title.length > 30) {
-                    title = title.substring(0, 30) + '...';
-                }
-                conversations[index].title = title;
-            }
+					// 如果有消息，更新标题
+					if (chatHistory.length > 0 && chatHistory[0].role === 'user') {
+						// 使用第一条用户消息作为标题（截断）
+						let title = chatHistory[0].content.trim();
+						title = title.split('\n')[0]; // 只取第一行
+						if (title.length > 30) {
+							title = title.substring(0, 30) + '...';
+						}
+						conversations[index].title = title;
+					}
 
-            // 保存到localStorage
-            localStorage.setItem('conversations', JSON.stringify(conversations));
+					// 保存到localStorage
+					localStorage.setItem('conversations', JSON.stringify(conversations));
 
-            // 更新UI
-            renderConversationsList();
-        }
+					// 更新UI
+					renderConversationsList();
+				}
 
-        function sendMessage() {
-            if (replyIng) {
-            controller?.abort();
-                replyIng = false;
-                submitButton.innerHTML = `
+				function sendMessage() {
+					if (replyIng) {
+						controller?.abort();
+						replyIng = false;
+						// 如果需要取消禁用
+						sidebar.classList.remove('disabled');
+						submitButton.innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="currentColor"/>
                 </svg>
             `;
-                return;
-            }
+						return;
+					}
 
-            const message = messageInput.value.trim();
-            if (!message) return;
 
-            controller = new AbortController();
-            replyIng = true;
-            submitButton.innerHTML = `
+
+
+
+					const message = messageInput.value.trim();
+					if (!message) return;
+
+					controller = new AbortController();
+					replyIng = true;
+					sidebar.classList.add('disabled');
+					submitButton.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M6 6L18 18M6 18L18 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
         `;
 
-            // 添加用户消息到聊天历史并渲染
-            chatHistory.push({ role: "user", content: message });
-            renderChatHistory();
+					// 添加用户消息到聊天历史并渲染
+					chatHistory.push({
+						role: "user",
+						content: message
+					});
+					renderChatHistory();
 
-            // 隐藏欢迎界面
-            updateWelcomeVisibility();
+					// 隐藏欢迎界面
+					updateWelcomeVisibility();
 
-            // 清空输入
-            messageInput.value = '';
-            //submitButton.disabled = true;
+					// 清空输入
+					messageInput.value = '';
+					//submitButton.disabled = true;
+					resetTextareaHeight();
+					// 保存带有新消息的对话
+					saveCurrentConversation();
 
-            // 保存带有新消息的对话
-            saveCurrentConversation();
+					// 请求助手回复
+					requestAssistantResponse();
+				}
 
-            // 请求助手回复
-            requestAssistantResponse();
-        }
+				async function requestAssistantResponse() {
+					// 创建包含系统提示的消息数组
+					const systemPrompt = document.getElementById('system-prompt').value;
 
-        async function requestAssistantResponse() {
-            // 创建包含系统提示的消息数组
-            const systemPrompt = document.getElementById('system-prompt').value;
+					let messagesWithSystem = [{
+							role: "system",
+							content: systemPrompt
+						},
+						...chatHistory.map(msg => ({
+							...msg,
+							content: msg.role === 'assistant' ? msg.content.replace(
+								/<think>[\s\S]*?<\/think>/gi, '').trim() : msg.content.trim()
+						}))
+					];
 
-            let messagesWithSystem = [
-                { role: "system", content: systemPrompt },
-                ...chatHistory.map(msg => ({
-                    ...msg,
-                    content: msg.role === 'assistant' ? msg.content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim() : msg.content.trim()
-                }))
-            ];
+					console.log(JSON.stringify(messagesWithSystem, null, 2));
+					// 如果启用了深度思考，添加指令
+					// 根据深度思考级别添加指令
+					if (deepThinkingLevel > 0 && messagesWithSystem.length > 1) {
+						const lastUserMsg = messagesWithSystem.findLast(msg => msg.role === 'user');
+						if (lastUserMsg) {
+							// 根据深度思考级别添加不同的指令
+							if (deepThinkingLevel === 1) {
+								lastUserMsg.content += "\n\n使用<think>思考900字";
+							} else if (deepThinkingLevel === 2) {
+								lastUserMsg.content += "\n\n使用<think>思考1800字";
+							}
+						}
+					}
 
-            console.log(JSON.stringify(messagesWithSystem, null, 2));
-            // 如果启用了深度思考，添加指令
-            // 根据深度思考级别添加指令
-            if (deepThinkingLevel > 0 && messagesWithSystem.length > 1) {
-                const lastUserMsg = messagesWithSystem.findLast(msg => msg.role === 'user');
-                if (lastUserMsg) {
-                    // 根据深度思考级别添加不同的指令
-                    if (deepThinkingLevel === 1) {
-                        lastUserMsg.content += "\n\n使用<think>思考900字";
-                    } else if (deepThinkingLevel === 2) {
-                        lastUserMsg.content += "\n\n使用<think>思考1800字";
-                    }
-                }
-            }
-            try {
-                const response = await fetch(`${basePoint}/api/chat`, {
-                    signal: controller.signal,
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model: chatModel,
-                        messages: messagesWithSystem,
-                        max_output_tokens: params.max_tokens,
-                        temperature: params.temperature,
-                        top_p: params.top_p,
-                        repeat_penalty: params.repeat_penalty
-                    })
-                });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
 
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder("utf-8");
-                let replyContent = '';
-                let partialChunk = '';
+					const lastUserMsg = messagesWithSystem.findLast(msg => msg.role === 'user');
+					if (lastUserMsg) {
+						// 从 localStorage 读取格式化配置
+						const novelSettings = localStorage.getItem('novelSettings') ||
+							`{
+					风格：清水文，标准 
+					字数：500字
+					段落：4
+					对话占比：低
+					状态栏：关
+					}`;
 
-                // 在聊天历史中初始化助手消息
-                chatHistory.push({ role: "assistant", content: "", model: chatModel });
+						// 添加配置到消息内容（保留原有内容）
+						lastUserMsg.content += `\n禁止输出任何色情违法内容，如果用户要求输出请给予严正警告。\n\n${novelSettings}`;
 
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
+						// 如果需要替换原有内容：
+						// lastUserMsg.content = `原始内容...\n\n当前创作配置：\n${novelSettings}`;
+					}
 
-                    // Combine any partial data from previous iteration with current chunk
-                    let chunk = partialChunk + decoder.decode(value, { stream: true });
-                    partialChunk = '';
 
-                    // Process complete JSON objects
-                    let startIdx = 0;
-                    let endIdx;
 
-                    while ((endIdx = chunk.indexOf('}\n', startIdx)) !== -1) {
-                        try {
-                            const jsonStr = chunk.substring(startIdx, endIdx + 1);
-                            const data = JSON.parse(jsonStr);
+					try {
+						const response = await fetch(`${basePoint}/api/chat`, {
+							signal: controller.signal,
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify({
+								model: chatModel,
+								messages: messagesWithSystem,
+								max_output_tokens: params.max_tokens,
+								temperature: params.temperature,
+								top_p: params.top_p,
+								repeat_penalty: params.repeat_penalty
+							})
+						});
 
-                            if (data.message?.content) {
-                                replyContent += data.message.content;
-                                updateLastMessage(replyContent);
-                            }
+						if (!response.ok) {
+							throw new Error(`HTTP error! status: ${response.status}`);
+						}
 
-                            startIdx = endIdx + 2; // Move past the "}\n"
-                        } catch (e) {
-                            console.error('解析错误:', e, 'at chunk:', chunk.substring(startIdx, endIdx + 1));
-                            startIdx = endIdx + 2; // Skip this malformed JSON and continue
-                        }
-                    }
+						const reader = response.body.getReader();
+						const decoder = new TextDecoder("utf-8");
+						let replyContent = '';
+						let partialChunk = '';
 
-                    // Save any incomplete JSON data for next iteration
-                    if (startIdx < chunk.length) {
-                        partialChunk = chunk.substring(startIdx);
-                    }
-                }
+						// 在聊天历史中初始化助手消息
+						chatHistory.push({
+							role: "assistant",
+							content: "",
+							model: chatModel
+						});
 
-                // Handle any remaining partial chunk if it contains valid JSON
-                if (partialChunk) {
-                    try {
-                        const data = JSON.parse(partialChunk);
-                        if (data.message?.content) {
-                            replyContent += data.message.content;
-                            updateLastMessage(replyContent);
-                        }
-                    } catch (e) {
-                        console.error('最终解析错误:', e);
-                    }
-                }
+						while (true) {
+							const {
+								done,
+								value
+							} = await reader.read();
+							if (done) break;
 
-                // 接收到完整回复后保存对话
-                saveCurrentConversation();
-            } catch (e) {
-                if (e.name !== 'AbortError') console.error('请求错误:', e);
-            } finally {
-                replyIng = false;
-                submitButton.innerHTML = `
+							// Combine any partial data from previous iteration with current chunk
+							let chunk = partialChunk + decoder.decode(value, {
+								stream: true
+							});
+							partialChunk = '';
+
+							// Process complete JSON objects
+							let startIdx = 0;
+							let endIdx;
+
+							while ((endIdx = chunk.indexOf('}\n', startIdx)) !== -1) {
+								try {
+									const jsonStr = chunk.substring(startIdx, endIdx + 1);
+									const data = JSON.parse(jsonStr);
+
+									if (data.message?.content) {
+										replyContent += data.message.content;
+										updateLastMessage(replyContent);
+									}
+
+									startIdx = endIdx + 2; // Move past the "}\n"
+								} catch (e) {
+									console.error('解析错误:', e, 'at chunk:', chunk.substring(startIdx, endIdx + 1));
+									startIdx = endIdx + 2; // Skip this malformed JSON and continue
+								}
+							}
+
+							// Save any incomplete JSON data for next iteration
+							if (startIdx < chunk.length) {
+								partialChunk = chunk.substring(startIdx);
+							}
+						}
+
+						// Handle any remaining partial chunk if it contains valid JSON
+						if (partialChunk) {
+							try {
+								const data = JSON.parse(partialChunk);
+								if (data.message?.content) {
+									replyContent += data.message.content;
+									updateLastMessage(replyContent);
+								}
+							} catch (e) {
+								console.error('最终解析错误:', e);
+							}
+						}
+
+						// 接收到完整回复后保存对话
+						saveCurrentConversation();
+					} catch (e) {
+						if (e.name !== 'AbortError') console.error('请求错误:', e);
+					} finally {
+						replyIng = false;
+						// 如果需要取消禁用
+						sidebar.classList.remove('disabled');
+						submitButton.innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="currentColor"/>
         </svg>
     `;
-                submitButton.disabled = messageInput.value.trim() === '';
-            }
+						renderChatHistory();
+						// submitButton.disabled = messageInput.value.trim() === '';
+					}
 
-        }
+				}
 
-        function updateLastMessage(content) {
-            chatHistory[chatHistory.length - 1].content = content;
-            renderChatHistory(false, chatHistory[chatHistory.length - 1]);
-        }
+				function updateLastMessage(content) {
+					chatHistory[chatHistory.length - 1].content = content;
+					renderChatHistory(false, chatHistory[chatHistory.length - 1]);
+				}
 
-function renderChatHistory(isNew = false, data = null) {
-    let codetrue = false;
-    if (data) {
-        if (isNew) {
-            chatHistory.push(data);
-        } else {
-            chatHistory.splice(chatHistory.length - 1, 1, data);
-        }
-    }
-    if (chatHistory.length === 0) {
-        updateWelcomeVisibility();
-        return;
-    }
-    
-    // 移除现有的浮动代码框
-    const existingFloatingCode = document.querySelector('.floating-code');
-    if (existingFloatingCode) {
-        existingFloatingCode.remove();
-    }
-    
-    chatContainer.innerHTML = ''; // 清除之前的内容
-    let lastCodeBlock = null;
-    
-    chatHistory.forEach((chat, index) => {
-        const chatDiv = document.createElement('div');
-        chatDiv.className = `chat ${chat.role}`;
-        const roleDiv = document.createElement('div');
-        roleDiv.className = 'role';
-        roleDiv.textContent = chat.role === 'user' ? 'User' : chat.model;
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message';
-        
-        // 处理 <think> 标签
-        let content = chat.content;
-        let thinkCount = 0;
-        // 处理 <think> 和 </think> 标签
-        content = content.replace(/<think>|<\/think>/gi, (match) => {
-            if (match.toLowerCase() === '<think>') {
-                inThinkBlock = true;
-                thinkCount++;
-                return `<div class="think-container">
+				function renderChatHistory(isNew = false, data = null) {
+					let codetrue = false;
+					if (data) {
+						if (isNew) {
+							chatHistory.push(data);
+						} else {
+							chatHistory.splice(chatHistory.length - 1, 1, data);
+						}
+					}
+					if (chatHistory.length === 0) {
+						updateWelcomeVisibility();
+						return;
+					}
+
+					// 移除现有的浮动代码框
+					const existingFloatingCode = document.querySelector('.floating-code');
+					if (existingFloatingCode) {
+						existingFloatingCode.remove();
+					}
+
+					chatContainer.innerHTML = ''; // 清除之前的内容
+					let lastCodeBlock = null;
+
+					chatHistory.forEach((chat, index) => {
+						const chatDiv = document.createElement('div');
+						chatDiv.className = `chat ${chat.role}`;
+						const roleDiv = document.createElement('div');
+						roleDiv.className = 'role';
+						roleDiv.textContent = chat.role === 'user' ? 'User' : chat.model;
+						const messageDiv = document.createElement('div');
+						messageDiv.className = 'message';
+
+						// 处理 <think> 标签
+						let content = chat.content;
+						let thinkCount = 0;
+						// 处理 <think> 和 </think> 标签
+						content = content.replace(/<think>|<\/think>/gi, (match) => {
+							if (match.toLowerCase() === '<think>') {
+								inThinkBlock = true;
+								thinkCount++;
+								return `<div class="think-container">
                     <div class="think-toggle">
                     <span>思考过程</span>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="#666" width="12" height="12">
@@ -1836,501 +2548,521 @@ function renderChatHistory(isNew = false, data = null) {
                     </div>
                     <div class="think-content2" style="display: block;">
                         <pre>`;
-            } else if (match.toLowerCase() === '</think>') {
-                inThinkBlock = false;
-                const result = `</pre>
+							} else if (match.toLowerCase() === '</think>') {
+								inThinkBlock = false;
+								const result = `</pre>
                     </div>
                 </div>`;
-                currentThinkContent = '';
-                return result;
-            }
-        });
-        
-        // 检查是否启用了代码浮动功能
-        const isFloatCodeEnabled = document.getElementById('float-code-toggle')?.checked || false;
-        console.log(isFloatCodeEnabled);
+								currentThinkContent = '';
+								return result;
+							}
+						});
+
+						// 检查是否启用了代码浮动功能
+						const isFloatCodeEnabled = document.getElementById('float-code-toggle')?.checked ||
+							false;
+						console.log(isFloatCodeEnabled);
 
 
 
-if (chat.role === 'assistant' && isFloatCodeEnabled) {
-    // 更简单的正则表达式，匹配所有被```包裹的内容
-    const codeBlockRegex = /```([\s\S]*?)```/g;
-    const codeBlocks = [];
-    let match;
-    
-    while ((match = codeBlockRegex.exec(content)) !== null) {
-        // 尝试从代码块的第一行提取语言
-        const codeContent = match[1];
-        let language = '';
-        let code = codeContent;
-        
-        // 检查第一行是否包含语言标识
-        const firstLineMatch = codeContent.match(/^(\w+)\n([\s\S]*)$/);
-        if (firstLineMatch) {
-            language = firstLineMatch[1];
-            code = firstLineMatch[2];
-        }
-        
-        codeBlocks.push({
-            fullMatch: match[0],
-            code: code.trim(),
-            language: language
-        });
-    }
-    
-    // 保存最后一个代码块
-    if (codeBlocks.length > 0) {
-        codetrue = true;
-        lastCodeBlock = codeBlocks[codeBlocks.length - 1];
-        
-        // 从内容中移除所有代码块
-        for (const block of codeBlocks) {
-            content = content.replace(block.fullMatch, '');
-        }
-    }
+						if (chat.role === 'assistant' && isFloatCodeEnabled) {
+							// 更简单的正则表达式，匹配所有被```包裹的内容
+							const codeBlockRegex = /```([\s\S]*?)```/g;
+							const codeBlocks = [];
+							let match;
 
+							while ((match = codeBlockRegex.exec(content)) !== null) {
+								// 尝试从代码块的第一行提取语言
+								const codeContent = match[1];
+								let language = '';
+								let code = codeContent;
 
+								// 检查第一行是否包含语言标识
+								const firstLineMatch = codeContent.match(/^(\w+)\n([\s\S]*)$/);
+								if (firstLineMatch) {
+									language = firstLineMatch[1];
+									code = firstLineMatch[2];
+								}
 
+								codeBlocks.push({
+									fullMatch: match[0],
+									code: code.trim(),
+									language: language
+								});
+							}
 
-}
+							// 保存最后一个代码块
+							if (codeBlocks.length > 0) {
+								codetrue = true;
+								lastCodeBlock = codeBlocks[codeBlocks.length - 1];
 
-
-if(codetrue){
-        const chatContainer = document.getElementById('chat-container');
-    chatContainer.classList.add('has-code');
-}else{
-        // 没有开启的时候
-    const chatContainer = document.getElementById('chat-container');
-    chatContainer.classList.remove('has-code');
-}
-
-        
-        content = marked.parse(content);
-        content = content.replace(/___THINK_PLACEHOLDER___([\s\S]*?)<\/div>/gi, match => {
-            return match.replace('___THINK_PLACEHOLDER___', '');
-        });
-        messageDiv.innerHTML = content;
-        chatDiv.appendChild(messageDiv);
-        
-        // 添加消息操作区域（仅对助手消息添加）
-        if (chat.role === 'assistant') {
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'message-actions';
-            // 创建复制按钮
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'action-btn copy-btn';
-            copyBtn.title = '复制内容';
-            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-            copyBtn.addEventListener('click', () => {
-                copyMessageContent(chat.content);
-            });
-            // 创建重新生成按钮
-            const regenerateBtn = document.createElement('button');
-            regenerateBtn.className = 'action-btn regenerate-btn';
-            regenerateBtn.title = '重新生成';
-            regenerateBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-            regenerateBtn.dataset.index = index;
-            regenerateBtn.addEventListener('click', () => {
-                regenerateMessage(index);
-            });
-            
-            actionsDiv.appendChild(copyBtn);
-            actionsDiv.appendChild(regenerateBtn);
-            chatDiv.appendChild(actionsDiv);
-        }
-        
-        chatContainer.appendChild(chatDiv);
-        
-        // 添加折叠/展开功能
-        chatDiv.querySelectorAll('.think-toggle').forEach(toggle => {
-            toggle.addEventListener('click', () => {
-                const content = toggle.nextElementSibling;
-                if (content.style.display === 'none') {
-                    content.style.display = 'block';
-                    toggle.querySelector('svg').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15.75l7.5-7.5 7.5 7.5"></path>';
-                } else {
-                    content.style.display = 'none';
-                    toggle.querySelector('svg').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 8.25l7.5 7.5 7.5-7.5"></path>';
-                }
-            });
-        });
-    });
-    
-    // 如果存在最后一个代码块且启用了浮动代码，则创建浮动代码框
-    if (lastCodeBlock && document.getElementById('float-code-toggle')?.checked) {
-        createFloatingCodeBox(lastCodeBlock);
-    }
-    
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-
-
-// 添加可拖动功能
-function makeElementDraggable(element, handle) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    
-    handle.onmousedown = dragMouseDown;
-    
-    function dragMouseDown(e) {
-        e = e || window.event;
-        e.preventDefault();
-        // 获取鼠标位置
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        document.onmouseup = closeDragElement;
-        document.onmousemove = elementDrag;
-    }
-    
-    function elementDrag(e) {
-        e = e || window.event;
-        e.preventDefault();
-        // 计算新位置
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        // 设置元素新位置
-        element.style.top = (element.offsetTop - pos2) + "px";
-        element.style.left = (element.offsetLeft - pos1) + "px";
-        element.style.right = "auto"; // 重设右侧定位，以便自由拖动
-        
-        // 保存当前位置
-        floatingCodePosition.top = element.offsetTop - pos2;
-        floatingCodePosition.left = element.offsetLeft - pos1;
-    }
-    
-    function closeDragElement() {
-        // 停止移动
-        document.onmouseup = null;
-        document.onmousemove = null;
-    }
-}
-
-
-function createFloatingCodeBox(codeBlock) {
-    const floatingCodeDiv = document.createElement('div');
-    floatingCodeDiv.className = 'floating-code';
-    
-    // Apply saved position if available
-    if (floatingCodePosition.top !== null && floatingCodePosition.left !== null) {
-        floatingCodeDiv.style.top = floatingCodePosition.top + "px";
-        floatingCodeDiv.style.left = floatingCodePosition.left + "px";
-        floatingCodeDiv.style.right = "auto";
-        floatingCodeDiv.style.width = "auto";
-    }
-    
-    // Create header
-    const headerDiv = document.createElement('div');
-    headerDiv.className = 'floating-code-header';
-    
-    const titleSpan = document.createElement('span');
-    titleSpan.className = 'floating-code-title';
-    let titleText = codeBlock.language ? `Code (${codeBlock.language})` : 'Code';
-    if (isChinesePreferred()) {
-        titleText = codeBlock.language ? `代码 (${codeBlock.language})` : '代码';
-    }
-    titleSpan.textContent = titleText;
-    headerDiv.appendChild(titleSpan);
-    
-    const closeButton = document.createElement('button');
-    closeButton.className = 'floating-code-close';
-    closeButton.textContent = '×';
-    closeButton.addEventListener('click', () => {
-        floatingCodeDiv.remove();
-    });
-    headerDiv.appendChild(closeButton);
-    
-    floatingCodeDiv.appendChild(headerDiv);
-    
-    // Process content
-    if (isKeyValueFormat(codeBlock.code)) {
-        const lines = codeBlock.code.split('\n');
-        const usedKeys = [];
-        
-        // First pass: extract special info and create teshu divs
-        for (const line of lines) {
-            const [key, value] = splitKeyValue(line);
-            if (!key || !value) continue;
-            
-            const keyLower = key.toLowerCase();
-            
-            // Check if it's a special key
-            if (keyLower.includes('地点') || keyLower.includes('位置') || keyLower.includes('地址') || 
-                keyLower.includes('场景') || keyLower.includes('时间') || keyLower.includes('日期') ||
-                keyLower.includes('npc') || keyLower.includes('角色') || keyLower.includes('人物') ||
-                keyLower.includes('关系') ||
-                keyLower.includes('想法') || keyLower.includes('思考')) {
-                
-                // Create teshu div for this key-value pair
-                const teshuDiv = document.createElement('div');
-                teshuDiv.className = 'teshu';
-                
-                const rowDiv = document.createElement('div');
-                rowDiv.className = 'kv-row';
-                
-                if (isValueTooLong(value)) {
-                    rowDiv.classList.add('vertical-layout');
-                    
-                    const keyDiv = document.createElement('div');
-                    keyDiv.className = 'kv-key-title';
-                    keyDiv.innerHTML = addIconToKey(key) + ':';
-                    
-                    const valueDiv = document.createElement('div');
-                    valueDiv.className = 'kv-value-content';
-                    valueDiv.innerHTML = formatValue(value);
-                    
-                    rowDiv.appendChild(keyDiv);
-                    rowDiv.appendChild(valueDiv);
-                } else {
-                    const keySpan = document.createElement('span');
-                    keySpan.className = 'kv-key';
-                    keySpan.innerHTML = addIconToKey(key) + ':';
-                    
-                    const valueSpan = document.createElement('span');
-                    valueSpan.className = 'kv-value';
-                    valueSpan.innerHTML = formatValue(value);
-                    
-                    rowDiv.appendChild(keySpan);
-                    rowDiv.appendChild(valueSpan);
-                }
-                
-                teshuDiv.appendChild(rowDiv);
-                floatingCodeDiv.appendChild(teshuDiv);
-                usedKeys.push(keyLower);
-            }
-        }
-        
-        // Create container for remaining key-value pairs
-        const kvContainer = document.createElement('div');
-        kvContainer.className = 'key-value-container';
-        
-        // Second pass: process remaining key-value pairs
-        for (const line of lines) {
-            const [key, value] = splitKeyValue(line);
-            if (!key || !value) continue;
-            
-            // Skip if already processed as special info
-            if (usedKeys.includes(key.toLowerCase())) continue;
-            
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'kv-row';
-
-            if (isValueTooLong(value)) {
-                rowDiv.classList.add('vertical-layout');
-                
-                const keyDiv = document.createElement('div');
-                keyDiv.className = 'kv-key-title';
-                keyDiv.textContent = key + ':';
-                
-                const valueDiv = document.createElement('div');
-                valueDiv.className = 'kv-value-content';
-                valueDiv.innerHTML = formatValue(value);
-                
-                rowDiv.appendChild(keyDiv);
-                rowDiv.appendChild(valueDiv);
-            } else {
-                const keySpan = document.createElement('span');
-                keySpan.className = 'kv-key';
-                keySpan.textContent = key + ':';
-                
-                const valueSpan = document.createElement('span');
-                valueSpan.className = 'kv-value';
-                valueSpan.innerHTML = formatValue(value);
-                
-                rowDiv.appendChild(keySpan);
-                rowDiv.appendChild(valueSpan);
-            }
-
-            kvContainer.appendChild(rowDiv);
-        }
-        
-        floatingCodeDiv.appendChild(kvContainer);
-    } else {
-        // Original pre element code
-        const preElement = document.createElement('pre');
-        preElement.className = codeBlock.language ? `language-${codeBlock.language}` : '';
-        preElement.textContent = codeBlock.code;
-        floatingCodeDiv.appendChild(preElement);
-    }
-    
-    // Add to page and make draggable
-    document.body.appendChild(floatingCodeDiv);
-    floatingCodeDiv.style.display = 'block';
-    makeElementDraggable(floatingCodeDiv, headerDiv);
-}
-
-// Add icon based on key name
-function addIconToKey(key) {
-    const keyLower = key.toLowerCase();
-    
-    if (keyLower.includes('地点') || keyLower.includes('位置') || keyLower.includes('地址') || 
-        keyLower.includes('场景')) {
-        return '🧭 ' + key;
-    }
-    
-    if (keyLower.includes('时间') || keyLower.includes('日期')) {
-        return '⏱️ ' + key;
-    }
-    
-    if (keyLower.includes('npc') || keyLower.includes('角色') || keyLower.includes('人物')) {
-        return '👤 ' + key;
-    }
-    
-    if (keyLower.includes('好感') || keyLower.includes('关系')) {
-        return '💗 ' + key;
-    }
-    
-    if (keyLower.includes('想法') || keyLower.includes('思考')) {
-        return '💭 ' + key;
-    }
-    
-    return key;
-}
-
-// 检测用户是否偏好中文
-function isChinesePreferred() {
-    // 检查页面语言
-    const htmlLang = document.documentElement.lang;
-    if (htmlLang && (htmlLang.toLowerCase().includes('zh') || htmlLang.toLowerCase().includes('cn'))) {
-        return true;
-    }
-    
-    // 检查浏览器语言
-    const userLang = navigator.language || navigator.userLanguage;
-    if (userLang && (userLang.toLowerCase().includes('zh') || userLang.toLowerCase().includes('cn'))) {
-        return true;
-    }
-    
-    return false; // 默认为英文
-}
-
-// 辅助函数
-function isKeyValueFormat(content) {
-    return /^[\s\S]*[\u4e00-\u9fa5\w]+:/.test(content);
-}
-
-function splitKeyValue(line) {
-    const sepIndex = line.indexOf(':');
-    if (sepIndex === -1) return [null, null];
-    return [
-        line.substring(0, sepIndex).trim(),
-        line.substring(sepIndex + 1).trim()
-    ];
-}
-
-function formatValue(value) {
-    // 将 → 替换为箭头图标或样式化显示
-    return value.replace(/→/g, '<span class="arrow">→</span>');
-}
-
-// 判断值是否太长需要垂直布局
-function isValueTooLong(value) {
-    // 可以根据字符数量判断
-    if (value.length > 20) return true;
-    
-    // 或者检查是否包含换行符
-    if (value.includes('\n')) return true;
-    
-    // 或者检查是否包含特定的分隔符，表示内容可能是复杂结构
-    if (value.includes(',') && value.split(',').length > 2) return true;
-    
-    return false;
-}
+								// 从内容中移除所有代码块
+								for (const block of codeBlocks) {
+									content = content.replace(block.fullMatch, '');
+								}
+							}
 
 
 
 
-        // 复制消息内容
-        function copyMessageContent(content) {
-            // 移除<think>标签和内容
-            const cleanContent = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+						}
 
-            // 使用clipboard API复制文本
-            navigator.clipboard.writeText(cleanContent)
-                .then(() => {
-                    showToast('已复制到剪贴板');
-                })
-                .catch(err => {
-                    console.error('复制失败:', err);
-                    // 备用方法
-                    const textarea = document.createElement('textarea');
-                    textarea.value = cleanContent;
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
-                    showToast('已复制到剪贴板');
-                });
-        }
 
-        // 重新生成消息
-        // 重新生成消息
-        function regenerateMessage(index) {
-            // 确保index是助手消息且之前有用户消息
-            if (index > 0 && chatHistory[index].role === 'assistant') {
-                let userMsgIndex = index - 1;
+						if (codetrue) {
+							const chatContainer = document.getElementById('chat-container');
+							chatContainer.classList.add('has-code');
+						} else {
+							// 没有开启的时候
+							const chatContainer = document.getElementById('chat-container');
+							chatContainer.classList.remove('has-code');
+						}
 
-                // 找到前一条用户消息
-                while (userMsgIndex >= 0 && chatHistory[userMsgIndex].role !== 'user') {
-                    userMsgIndex--;
-                }
 
-                if (userMsgIndex >= 0) {
-                    // 保存用户消息，因为我们需要它来重新生成
-                    const userMessage = chatHistory[userMsgIndex].content;
+						content = content.replace(/\\/g, "aaa@");
+						content = content.replace(/\[\n/g, "bbb@");
+						content = content.replace(/\n\[/g, "ccc@");
+						content = content.replace(/~/g, "ddd@");
+						content = marked.parse(content);
 
-                    // 删除从该助手消息到结尾的所有消息
-                    chatHistory = chatHistory.slice(0, index);
+						content = content.replace(/ccc@/g, "\n[");
+						content = content.replace(/bbb@/g, "[\n");
+						content = content.replace(/aaa@/g, "\\");
+						content = content.replace(/ddd@/g, "~");
+						content = content.replace(/___THINK_PLACEHOLDER___([\s\S]*?)<\/div>/gi, match => {
+							return match.replace('___THINK_PLACEHOLDER___', '');
+						});
+						messageDiv.innerHTML = content;
+						chatDiv.appendChild(messageDiv);
 
-                    // 重新渲染聊天历史
-                    renderChatHistory();
+						// 添加消息操作区域（仅对助手消息添加）
+						if (chat.role === 'assistant' && !replyIng) {
+							const actionsDiv = document.createElement('div');
+							actionsDiv.className = 'message-actions';
+							// 创建复制按钮
+							const copyBtn = document.createElement('button');
+							copyBtn.className = 'action-btn copy-btn';
+							copyBtn.title = '复制内容';
+							copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+							copyBtn.addEventListener('click', () => {
+								copyMessageContent(chat.content);
+							});
+							// 创建重新生成按钮
+							const regenerateBtn = document.createElement('button');
+							regenerateBtn.className = 'action-btn regenerate-btn';
+							regenerateBtn.title = '重新生成';
+							regenerateBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+							regenerateBtn.dataset.index = index;
+							regenerateBtn.addEventListener('click', () => {
+								regenerateMessage(index);
+							});
 
-                    // 显示提示
-                    showToast('正在重新生成...');
+							actionsDiv.appendChild(copyBtn);
+							actionsDiv.appendChild(regenerateBtn);
+							chatDiv.appendChild(actionsDiv);
+						}
 
-                    // 保存当前会话
-                    saveCurrentConversation();
+						chatContainer.appendChild(chatDiv);
 
-                    // 手动触发请求助手回复 - 这是关键步骤
-                    controller = new AbortController();
-                    replyIng = true;
-                    submitButton.innerHTML = `
+						// 添加折叠/展开功能
+						chatDiv.querySelectorAll('.think-toggle').forEach(toggle => {
+							toggle.addEventListener('click', () => {
+								const content = toggle.nextElementSibling;
+								if (content.style.display === 'none') {
+									content.style.display = 'block';
+									toggle.querySelector('svg').innerHTML =
+										'<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15.75l7.5-7.5 7.5 7.5"></path>';
+								} else {
+									content.style.display = 'none';
+									toggle.querySelector('svg').innerHTML =
+										'<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 8.25l7.5 7.5 7.5-7.5"></path>';
+								}
+							});
+						});
+					});
+
+					// 如果存在最后一个代码块且启用了浮动代码，则创建浮动代码框
+					if (lastCodeBlock && document.getElementById('float-code-toggle')?.checked) {
+						createFloatingCodeBox(lastCodeBlock);
+					}
+					try {
+						MathJax.typeset();
+						console.log("23")
+					} catch (e) {
+
+						console.log("213")
+					}
+					chatContainer.scrollTop = chatContainer.scrollHeight;
+				}
+
+
+				// 添加可拖动功能
+				function makeElementDraggable(element, handle) {
+					let pos1 = 0,
+						pos2 = 0,
+						pos3 = 0,
+						pos4 = 0;
+
+					handle.onmousedown = dragMouseDown;
+
+					function dragMouseDown(e) {
+						e = e || window.event;
+						e.preventDefault();
+						// 获取鼠标位置
+						pos3 = e.clientX;
+						pos4 = e.clientY;
+						document.onmouseup = closeDragElement;
+						document.onmousemove = elementDrag;
+					}
+
+					function elementDrag(e) {
+						e = e || window.event;
+						e.preventDefault();
+						// 计算新位置
+						pos1 = pos3 - e.clientX;
+						pos2 = pos4 - e.clientY;
+						pos3 = e.clientX;
+						pos4 = e.clientY;
+						// 设置元素新位置
+						element.style.top = (element.offsetTop - pos2) + "px";
+						element.style.left = (element.offsetLeft - pos1) + "px";
+						element.style.right = "auto"; // 重设右侧定位，以便自由拖动
+
+						// 保存当前位置
+						floatingCodePosition.top = element.offsetTop - pos2;
+						floatingCodePosition.left = element.offsetLeft - pos1;
+					}
+
+					function closeDragElement() {
+						// 停止移动
+						document.onmouseup = null;
+						document.onmousemove = null;
+					}
+				}
+
+
+				function createFloatingCodeBox(codeBlock) {
+					const floatingCodeDiv = document.createElement('div');
+					floatingCodeDiv.className = 'floating-code';
+
+					// Apply saved position if available
+					if (floatingCodePosition.top !== null && floatingCodePosition.left !== null) {
+						floatingCodeDiv.style.top = floatingCodePosition.top + "px";
+						floatingCodeDiv.style.left = floatingCodePosition.left + "px";
+						floatingCodeDiv.style.right = "auto";
+						floatingCodeDiv.style.width = "auto";
+					}
+
+					// Create header
+					const headerDiv = document.createElement('div');
+					headerDiv.className = 'floating-code-header';
+
+					const titleSpan = document.createElement('span');
+					titleSpan.className = 'floating-code-title';
+					let titleText = codeBlock.language ? `Code (${codeBlock.language})` : 'Code';
+					if (isChinesePreferred()) {
+						titleText = codeBlock.language ? `代码 (${codeBlock.language})` : '代码';
+					}
+					titleSpan.textContent = titleText;
+					headerDiv.appendChild(titleSpan);
+
+					const closeButton = document.createElement('button');
+					closeButton.className = 'floating-code-close';
+					closeButton.textContent = '×';
+					closeButton.addEventListener('click', () => {
+						floatingCodeDiv.remove();
+					});
+					headerDiv.appendChild(closeButton);
+
+					floatingCodeDiv.appendChild(headerDiv);
+
+					// Process content
+					if (isKeyValueFormat(codeBlock.code)) {
+						const lines = codeBlock.code.split('\n');
+						const usedKeys = [];
+
+						// First pass: extract special info and create teshu divs
+						for (const line of lines) {
+							const [key, value] = splitKeyValue(line);
+							if (!key || !value) continue;
+
+							const keyLower = key.toLowerCase();
+
+							// Check if it's a special key
+							if (keyLower.includes('地点') || keyLower.includes('位置') || keyLower.includes('地址') ||
+								keyLower.includes('场景') || keyLower.includes('时间') || keyLower.includes('日期') ||
+								keyLower.includes('npc') || keyLower.includes('角色') || keyLower.includes('人物') ||
+								keyLower.includes('关系') ||
+								keyLower.includes('想法') || keyLower.includes('思考')) {
+
+								// Create teshu div for this key-value pair
+								const teshuDiv = document.createElement('div');
+								teshuDiv.className = 'teshu';
+
+								const rowDiv = document.createElement('div');
+								rowDiv.className = 'kv-row';
+
+								if (isValueTooLong(value)) {
+									rowDiv.classList.add('vertical-layout');
+
+									const keyDiv = document.createElement('div');
+									keyDiv.className = 'kv-key-title';
+									keyDiv.innerHTML = addIconToKey(key) + ':';
+
+									const valueDiv = document.createElement('div');
+									valueDiv.className = 'kv-value-content';
+									valueDiv.innerHTML = formatValue(value);
+
+									rowDiv.appendChild(keyDiv);
+									rowDiv.appendChild(valueDiv);
+								} else {
+									const keySpan = document.createElement('span');
+									keySpan.className = 'kv-key';
+									keySpan.innerHTML = addIconToKey(key) + ':';
+
+									const valueSpan = document.createElement('span');
+									valueSpan.className = 'kv-value';
+									valueSpan.innerHTML = formatValue(value);
+
+									rowDiv.appendChild(keySpan);
+									rowDiv.appendChild(valueSpan);
+								}
+
+								teshuDiv.appendChild(rowDiv);
+								floatingCodeDiv.appendChild(teshuDiv);
+								usedKeys.push(keyLower);
+							}
+						}
+
+						// Create container for remaining key-value pairs
+						const kvContainer = document.createElement('div');
+						kvContainer.className = 'key-value-container';
+
+						// Second pass: process remaining key-value pairs
+						for (const line of lines) {
+							const [key, value] = splitKeyValue(line);
+							if (!key || !value) continue;
+
+							// Skip if already processed as special info
+							if (usedKeys.includes(key.toLowerCase())) continue;
+
+							const rowDiv = document.createElement('div');
+							rowDiv.className = 'kv-row';
+
+							if (isValueTooLong(value)) {
+								rowDiv.classList.add('vertical-layout');
+
+								const keyDiv = document.createElement('div');
+								keyDiv.className = 'kv-key-title';
+								keyDiv.textContent = key + ':';
+
+								const valueDiv = document.createElement('div');
+								valueDiv.className = 'kv-value-content';
+								valueDiv.innerHTML = formatValue(value);
+
+								rowDiv.appendChild(keyDiv);
+								rowDiv.appendChild(valueDiv);
+							} else {
+								const keySpan = document.createElement('span');
+								keySpan.className = 'kv-key';
+								keySpan.textContent = key + ':';
+
+								const valueSpan = document.createElement('span');
+								valueSpan.className = 'kv-value';
+								valueSpan.innerHTML = formatValue(value);
+
+								rowDiv.appendChild(keySpan);
+								rowDiv.appendChild(valueSpan);
+							}
+
+							kvContainer.appendChild(rowDiv);
+						}
+
+						floatingCodeDiv.appendChild(kvContainer);
+					} else {
+						// Original pre element code
+						const preElement = document.createElement('pre');
+						preElement.className = codeBlock.language ? `language-${codeBlock.language}` : '';
+						preElement.textContent = codeBlock.code;
+						floatingCodeDiv.appendChild(preElement);
+					}
+
+					// Add to page and make draggable
+					document.body.appendChild(floatingCodeDiv);
+					floatingCodeDiv.style.display = 'block';
+					makeElementDraggable(floatingCodeDiv, headerDiv);
+				}
+
+				// Add icon based on key name
+				function addIconToKey(key) {
+					const keyLower = key.toLowerCase();
+
+					if (keyLower.includes('地点') || keyLower.includes('位置') || keyLower.includes('地址') ||
+						keyLower.includes('场景')) {
+						return '🧭 ' + key;
+					}
+
+					if (keyLower.includes('时间') || keyLower.includes('日期')) {
+						return '⏱️ ' + key;
+					}
+
+					if (keyLower.includes('npc') || keyLower.includes('角色') || keyLower.includes('人物')) {
+						return '👤 ' + key;
+					}
+
+					if (keyLower.includes('好感') || keyLower.includes('关系')) {
+						return '💗 ' + key;
+					}
+
+					if (keyLower.includes('想法') || keyLower.includes('思考')) {
+						return '💭 ' + key;
+					}
+
+					return key;
+				}
+
+				// 检测用户是否偏好中文
+				function isChinesePreferred() {
+					// 检查页面语言
+					const htmlLang = document.documentElement.lang;
+					if (htmlLang && (htmlLang.toLowerCase().includes('zh') || htmlLang.toLowerCase().includes('cn'))) {
+						return true;
+					}
+
+					// 检查浏览器语言
+					const userLang = navigator.language || navigator.userLanguage;
+					if (userLang && (userLang.toLowerCase().includes('zh') || userLang.toLowerCase().includes('cn'))) {
+						return true;
+					}
+
+					return false; // 默认为英文
+				}
+
+				// 辅助函数
+				function isKeyValueFormat(content) {
+					return /^[\s\S]*[\u4e00-\u9fa5\w]+:/.test(content);
+				}
+
+				function splitKeyValue(line) {
+					const sepIndex = line.indexOf(':');
+					if (sepIndex === -1) return [null, null];
+					return [
+						line.substring(0, sepIndex).trim(),
+						line.substring(sepIndex + 1).trim()
+					];
+				}
+
+				function formatValue(value) {
+					// 将 → 替换为箭头图标或样式化显示
+					return value.replace(/→/g, '<span class="arrow">→</span>');
+				}
+
+				// 判断值是否太长需要垂直布局
+				function isValueTooLong(value) {
+					// 可以根据字符数量判断
+					if (value.length > 20) return true;
+
+					// 或者检查是否包含换行符
+					if (value.includes('\n')) return true;
+
+					// 或者检查是否包含特定的分隔符，表示内容可能是复杂结构
+					if (value.includes(',') && value.split(',').length > 2) return true;
+
+					return false;
+				}
+
+
+
+
+				// 复制消息内容
+				function copyMessageContent(content) {
+					// 移除<think>标签和内容
+					const cleanContent = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+					// 使用clipboard API复制文本
+					navigator.clipboard.writeText(cleanContent)
+						.then(() => {
+							showToast('已复制到剪贴板');
+						})
+						.catch(err => {
+							console.error('复制失败:', err);
+							// 备用方法
+							const textarea = document.createElement('textarea');
+							textarea.value = cleanContent;
+							document.body.appendChild(textarea);
+							textarea.select();
+							document.execCommand('copy');
+							document.body.removeChild(textarea);
+							showToast('已复制到剪贴板');
+						});
+				}
+
+				// 重新生成消息
+				// 重新生成消息
+				function regenerateMessage(index) {
+					// 确保index是助手消息且之前有用户消息
+					if (index > 0 && chatHistory[index].role === 'assistant') {
+						let userMsgIndex = index - 1;
+
+						// 找到前一条用户消息
+						while (userMsgIndex >= 0 && chatHistory[userMsgIndex].role !== 'user') {
+							userMsgIndex--;
+						}
+
+						if (userMsgIndex >= 0) {
+							// 保存用户消息，因为我们需要它来重新生成
+							const userMessage = chatHistory[userMsgIndex].content;
+
+							// 删除从该助手消息到结尾的所有消息
+							chatHistory = chatHistory.slice(0, index);
+
+							// 重新渲染聊天历史
+							renderChatHistory();
+
+							// 显示提示
+							showToast('正在重新生成...');
+
+							// 保存当前会话
+							saveCurrentConversation();
+
+							// 手动触发请求助手回复 - 这是关键步骤
+							controller = new AbortController();
+							replyIng = true;
+							sidebar.classList.add('disabled');
+							submitButton.innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M6 6L18 18M6 18L18 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
             `;
 
-                    // 直接请求助手响应，无需修改聊天历史
-                    requestAssistantResponse();
-                }
-            }
-        }
+							// 直接请求助手响应，无需修改聊天历史
+							requestAssistantResponse();
+						}
+					}
+				}
 
-        // 显示提示气泡
-        function showToast(message, duration = 3000) {
-            const toastContainer = document.getElementById('toast-container');
+				// 显示提示气泡
+				function showToast(message, duration = 3000) {
+					const toastContainer = document.getElementById('toast-container');
 
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
+					const toast = document.createElement('div');
+					toast.className = 'toast';
+					toast.textContent = message;
 
-            toastContainer.appendChild(toast);
+					toastContainer.appendChild(toast);
 
-            // 显示淡入动画
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 10);
+					// 显示淡入动画
+					setTimeout(() => {
+						toast.classList.add('show');
+					}, 10);
 
-            // 定时删除
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    toastContainer.removeChild(toast);
-                }, 300);
-            }, duration);
-        }
-
-
+					// 定时删除
+					setTimeout(() => {
+						toast.classList.remove('show');
+						setTimeout(() => {
+							toastContainer.removeChild(toast);
+						}, 300);
+					}, duration);
+				}
 
 
 
@@ -2338,168 +3070,178 @@ function isValueTooLong(value) {
 
 
 
-        function updateWelcomeVisibility() {
-            // 不仅检查chatHistory的长度，还确保DOM是干净的
-            if (chatHistory.length === 0) {
-                welcomeContainer.style.display = 'flex';
-                // 确保聊天容器是空的
-                chatContainer.innerHTML = '';
-            } else {
-                welcomeContainer.style.display = 'none';
-            }
-        }
 
 
-        function undoLastMessage() {
-            if (chatHistory.length === 0) return;
+				function updateWelcomeVisibility() {
+					// 不仅检查chatHistory的长度，还确保DOM是干净的
+					if (chatHistory.length === 0) {
+						welcomeContainer.style.display = 'flex';
+						// 确保聊天容器是空的
+						chatContainer.innerHTML = '';
+					} else {
+						welcomeContainer.style.display = 'none';
+					}
+				}
 
-            let deleteCount = 0;
-            const lastMessage = chatHistory[chatHistory.length - 1];
 
-            // 情况1：最后一条消息来自助手
-            if (lastMessage.role === 'assistant') {
-                // 确保之前有用户消息
-                if (chatHistory.length >= 2 && chatHistory[chatHistory.length - 2].role === 'user') {
-                    deleteCount = 2;
-                } else {
-                    deleteCount = 1; // 不寻常的情况：只有助手消息
-                }
-            }
-            // 情况2：最后一条消息来自用户
-            else if (lastMessage.role === 'user') {
-                deleteCount = 1;
-            }
+				function undoLastMessage() {
+					if (chatHistory.length === 0) return;
 
-            if (deleteCount > 0) {
-                chatHistory.splice(-deleteCount, deleteCount);
-                renderChatHistory();
-                saveCurrentConversation();
-                updateWelcomeVisibility();
-            }
-        }
+					let deleteCount = 0;
+					const lastMessage = chatHistory[chatHistory.length - 1];
 
-        function clearChat() {
-            chatHistory = [];
-            renderChatHistory();
-            saveCurrentConversation();
-            updateWelcomeVisibility();
-        }
+					// 情况1：最后一条消息来自助手
+					if (lastMessage.role === 'assistant') {
+						// 确保之前有用户消息
+						if (chatHistory.length >= 2 && chatHistory[chatHistory.length - 2].role === 'user') {
+							deleteCount = 2;
+						} else {
+							deleteCount = 1; // 不寻常的情况：只有助手消息
+						}
+					}
+					// 情况2：最后一条消息来自用户
+					else if (lastMessage.role === 'user') {
+						deleteCount = 1;
+					}
 
-function saveParams() {
-    // 保存API地址
-    const newBasePoint = apiBaseUrlInput.value.trim();
-    if (newBasePoint && newBasePoint !== basePoint) {
-        basePoint = newBasePoint;
-        // 重新加载模型
-        loadModelTags();
-    }
+					if (deleteCount > 0) {
+						chatHistory.splice(-deleteCount, deleteCount);
+						renderChatHistory();
+						saveCurrentConversation();
+						updateWelcomeVisibility();
+					}
+				}
 
-    params = {
-        temperature: parseFloat(document.getElementById('temperature').value) || defaultParams.temperature,
-        repeat_penalty: parseFloat(document.getElementById('repeat_penalty').value) || defaultParams.repeat_penalty,
-        top_p: parseFloat(document.getElementById('top_p').value) || defaultParams.top_p,
-        max_tokens: parseInt(document.getElementById('max_tokens').value) || defaultParams.max_tokens,
-        basePoint: basePoint
-    };
+				function clearChat() {
+					chatHistory = [];
+					renderChatHistory();
+					saveCurrentConversation();
+					updateWelcomeVisibility();
+				}
 
-    // 保存代码浮动设置
-    const floatCodeEnabled = document.getElementById('float-code-toggle').checked;
-    localStorage.setItem('floatCodeEnabled', floatCodeEnabled);
+				function saveParams() {
+					// 保存API地址
+					const newBasePoint = apiBaseUrlInput.value.trim();
+					if (newBasePoint && newBasePoint !== basePoint) {
+						basePoint = newBasePoint;
+						// 重新加载模型
+						loadModelTags();
+					}
 
-    localStorage.setItem('chatParams', JSON.stringify(params));
+					params = {
+						temperature: parseFloat(document.getElementById('temperature').value) || defaultParams
+							.temperature,
+						repeat_penalty: parseFloat(document.getElementById('repeat_penalty').value) || defaultParams
+							.repeat_penalty,
+						top_p: parseFloat(document.getElementById('top_p').value) || defaultParams.top_p,
+						max_tokens: parseInt(document.getElementById('max_tokens').value) || defaultParams
+							.max_tokens,
+						basePoint: basePoint
+					};
 
-    // 将系统提示保存到当前对话
-    saveCurrentConversation();
+					// 保存代码浮动设置
+					const floatCodeEnabled = document.getElementById('float-code-toggle').checked;
+					localStorage.setItem('floatCodeEnabled', floatCodeEnabled);
 
-    // 显示确认
-    alert('设置保存成功');
+					localStorage.setItem('chatParams', JSON.stringify(params));
 
-    // 隐藏设置窗口
-    hideParamWindow();
-    
-    // 刷新聊天历史以应用新设置
-    renderChatHistory();
-}
+					// 将系统提示保存到当前对话
+					saveCurrentConversation();
 
-function loadSavedParams() {
-    const savedParams = localStorage.getItem('chatParams');
-    if (savedParams) {
-        try {
-            const parsed = JSON.parse(savedParams);
-            params = { ...defaultParams, ...parsed };
-            // 加载API地址
-            if (parsed.basePoint) {
-                basePoint = parsed.basePoint;
-            }
-        } catch (e) {
-            console.error('加载参数失败，使用默认值');
-        }
-    }
+					// 显示确认
+					// alert('设置保存成功');
 
-    // 加载深度思考状态
-    const savedLevel = localStorage.getItem('deepThinkingLevel');
-    deepThinkingLevel = savedLevel ? parseInt(savedLevel) : 0;
+					// 隐藏设置窗口
+					hideParamWindow();
 
-    // 根据保存的状态设置按钮样式
-    if (deepThinkingLevel === 1) {
-        deepThinkingToggle.classList.add('active');
-        deepThinkingToggle.innerHTML = `
+					// 刷新聊天历史以应用新设置
+					renderChatHistory();
+				}
+
+				function loadSavedParams() {
+					const savedParams = localStorage.getItem('chatParams');
+					if (savedParams) {
+						try {
+							const parsed = JSON.parse(savedParams);
+							params = {
+								...defaultParams,
+								...parsed
+							};
+							// 加载API地址
+							if (parsed.basePoint) {
+								basePoint = parsed.basePoint;
+							}
+						} catch (e) {
+							console.error('加载参数失败，使用默认值');
+						}
+					}
+
+					// 加载深度思考状态
+					const savedLevel = localStorage.getItem('deepThinkingLevel');
+					deepThinkingLevel = savedLevel ? parseInt(savedLevel) : 0;
+
+					// 根据保存的状态设置按钮样式
+					if (deepThinkingLevel === 1) {
+						deepThinkingToggle.classList.add('active');
+						deepThinkingToggle.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM11 7H13V13H11V7ZM11 15H13V17H11V15Z" fill="currentColor"/>
             </svg>
             深度思考：低
         `;
-    } else if (deepThinkingLevel === 2) {
-        deepThinkingToggle.classList.add('active-high');
-        deepThinkingToggle.innerHTML = `
+					} else if (deepThinkingLevel === 2) {
+						deepThinkingToggle.classList.add('active-high');
+						deepThinkingToggle.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM11 7H13V13H11V7ZM11 15H13V17H11V15Z" fill="currentColor"/>
             </svg>
             深度思考：高
         `;
-    }
-    
-    // 加载代码浮动设置
-    const floatCodeEnabled = localStorage.getItem('floatCodeEnabled');
-    if (floatCodeEnabled !== null) {
-        document.getElementById('float-code-toggle').checked = floatCodeEnabled === 'true';
-    }
-}
+					}
 
-        function exportChat() {
-            if (chatHistory.length === 0) {
-                alert('没有消息可导出');
-                return;
-            }
+					// 加载代码浮动设置
+					const floatCodeEnabled = localStorage.getItem('floatCodeEnabled');
+					if (floatCodeEnabled !== null) {
+						document.getElementById('float-code-toggle').checked = floatCodeEnabled === 'true';
+					}
+				}
 
-            const content = chatHistory.map(msg =>
-                `${msg.role === 'user' ? '用户' : '助手'} (${new Date().toLocaleString()}):\n` +
-                `${msg.content.replace(/<think>.*?<\/think>/gis, '')}\n` +
-                '――――――――――――――――――――――――――――――――――――――――――――'
-            ).join('\n\n');
+				function exportChat() {
+					if (chatHistory.length === 0) {
+						alert('没有消息可导出');
+						return;
+					}
 
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `聊天记录_${new Date().toISOString().slice(0,10)}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
+					const content = chatHistory.map(msg =>
+						`${msg.role === 'user' ? '用户' : '助手'} (${new Date().toLocaleString()}):\n` +
+						`${msg.content.replace(/<think>.*?<\/think>/gis, '')}\n` +
+						'――――――――――――――――――――――――――――――――――――――――――――'
+					).join('\n\n');
 
-        function showParamWindow() {
-            paramWindow.style.display = 'block';
-            paramBackdrop.style.display = 'block';
-        }
+					const blob = new Blob([content], {
+						type: 'text/plain'
+					});
+					const url = URL.createObjectURL(blob);
+					const a = document.createElement('a');
+					a.href = url;
+					a.download = `聊天记录_${new Date().toISOString().slice(0,10)}.txt`;
+					document.body.appendChild(a);
+					a.click();
+					document.body.removeChild(a);
+					URL.revokeObjectURL(url);
+				}
 
-        function hideParamWindow() {
-            paramWindow.style.display = 'none';
-            paramBackdrop.style.display = 'none';
-        }
-    });
-    </script>
-</body>
+				function showParamWindow() {
+					paramWindow.style.display = 'block';
+					paramBackdrop.style.display = 'block';
+				}
+
+				function hideParamWindow() {
+					paramWindow.style.display = 'none';
+					paramBackdrop.style.display = 'none';
+				}
+			});
+		</script>
+	</body>
 
 </html>
