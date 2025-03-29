@@ -1,7 +1,7 @@
 ## [点击在线直接使用](https://leftnorth.com/ollama/)
 
 ## 一个简单的与ollama交互的网页应用在线访问
-
+- ![94982906](https://github.com/user-attachments/assets/579dc5f6-ccf9-44d7-b8c9-92fa91c69bf9)
 - ![image](https://github.com/user-attachments/assets/56542fd7-9e3d-4f8e-bc72-26e3c370bbaa)
 - ![image](https://github.com/user-attachments/assets/35afee1b-2ad0-41f0-a30c-f99e37dd8f47)
 - ![image](https://github.com/user-attachments/assets/38046b8e-47d7-421c-b71d-e43577b36047)
