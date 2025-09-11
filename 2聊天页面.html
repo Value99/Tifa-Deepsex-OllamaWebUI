@@ -3212,7 +3212,7 @@
 
 					const content = chatHistory.map(msg =>
 						`${msg.role === 'user' ? '用户' : '助手'} (${new Date().toLocaleString()}):\n` +
-						`${msg.content.replace(/<think>.*?<\/think>/gis, '')}\n` +
+						`${(Array.isArray(msg.content) ? (msg.content[0]?.text || '') : msg.content).replace(/<think>.*?<\/think>/gis, '')}\n` +
 						'――――――――――――――――――――――――――――――――――――――――――――'
 					).join('\n\n');
 
@@ -3241,5 +3241,6 @@
 			});
 		</script>
 	</body>
+
 
 </html>
