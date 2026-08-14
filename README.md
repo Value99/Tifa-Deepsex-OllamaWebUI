@@ -1,4 +1,4 @@
-## [点击在线直接使用](https://leftnorth.com/ollama/)
+## [点击在线直接使用](https://leftnorth.com/)
 
 ## 一个简单的与ollama交互的网页应用在线访问
 - ![94982906](https://github.com/user-attachments/assets/579dc5f6-ccf9-44d7-b8c9-92fa91c69bf9)
